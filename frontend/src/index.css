@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  background-image: linear-gradient(to right, #666666, #999999, #666666);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+/*****************
+  SCROLL BAR CSS
+*****************/
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #999999; 
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #333333; 
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #333333; 
+}
+
+/*********************
+  DISABLED INPUT CSS
+*********************/
+input:disabled::-webkit-input-placeholder { /* WebKit browsers */
+  color: #999999;
+}
+input:disabled:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+  color: #999999;
+}
+input:disabled::-moz-placeholder { /* Mozilla Firefox 19+ */
+  color: #999999;
+}
+input:disabled:-ms-input-placeholder { /* Internet Explorer 10+ */
+  color: #999999;
+}
