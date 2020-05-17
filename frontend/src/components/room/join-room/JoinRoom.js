@@ -16,14 +16,14 @@ class JoinRoom extends React.Component {
     }
     this.state = {
       roomName,
-      userName: 'Vivek Patel',
+      userName: '',
       showAlert: false,
       showAlertMessage: ''
     };
     this.roomNameRegex = new RegExp(/^\w[0-9a-zA-Z-_]{4,22}\w$/);
-    this.userNameRegex = new RegExp(/^\w[0-9a-zA-Z-_ ]{4,34}\w$/);
+    this.userNameRegex = new RegExp(/^\w[0-9a-zA-Z-_ ]{3,34}\w$/);
     this.roomNameMessage = 'Room name should only contain letters, numbers, hyphen(-) & underscore(_) and length should be between 6 to 24.';
-    this.userNameMessage = 'User name should only contain letters, numbers, space, hyphen(-) & underscore(_) and length should be between 6 to 36.';
+    this.userNameMessage = 'User name should only contain letters, numbers, space, hyphen(-) & underscore(_) and length should be between 3 to 36.';
     this.roomNameChange = this.roomNameChange.bind(this);
     this.userNameChange = this.userNameChange.bind(this);
     this.joinRoom = this.joinRoom.bind(this);

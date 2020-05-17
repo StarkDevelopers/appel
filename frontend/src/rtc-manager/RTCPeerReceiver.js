@@ -1,4 +1,18 @@
-export default async function RTCPeerReceiver(peerConnection, socket, roomName, connectedUser, userName) {
+export default async function RTCPeerReceiver(
+    peerConnection,
+    socket,
+    roomName,
+    userName,
+    {
+      receivedMessage,
+      peerJoined,
+      addPeerUserName,
+      peerLeft,
+      incomingCall,
+      cancelledCall,
+      rejectedCall,
+      pickedUpCall
+    }) {
   peerConnection.addEventListener('icegatheringstatechange', status => {});
 
   peerConnection.addEventListener('icecandidate', event => {
@@ -17,18 +31,65 @@ export default async function RTCPeerReceiver(peerConnection, socket, roomName, 
     }
   });
 
+  socket.on('acknowledgement', () => {});
+
+  const onPeerLeave = () => {
+    socket.off('acknowledgement');
+    socket.off('accepted-offer');
+    socket.off('onicecandidate');
+    socket.off('disconnected');
+    socket.off('calling');
+    socket.off('cancelledCall');
+    socket.off('rejectedCall');
+    socket.off('pickedUpCall');
+    peerLeft();
+  };
+
+  socket.on('disconnected', () => {
+    onPeerLeave();
+  });
+
+  peerConnection.addEventListener('connectionstatechange', event => {
+    console.log('STATE', peerConnection.connectionState);
+    if (peerConnection.connectionState === 'connected') {
+      // Peers connected!
+      peerJoined();
+    } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
+      onPeerLeave();
+    }
+  });
+
   const dataChannel = peerConnection.createDataChannel(roomName);
 
   dataChannel.addEventListener('open', event => {});
 
   dataChannel.addEventListener('close', event => {});
 
+  dataChannel.addEventListener('message', event => {
+    receivedMessage(event.data);
+  });
+
+  socket.on('calling', () => {
+    incomingCall();
+  });
+
+  socket.on('cancelledCall', () => {
+    cancelledCall(true);
+  });
+
+  socket.on('rejectedCall', () => {
+    rejectedCall(true);
+  });
+
+  socket.on('pickedUpCall', () => {
+    pickedUpCall(true);
+  });
+
   socket.on('accepted-offer', async ({ answer, user }) => {
     const remoteAnswer = new RTCSessionDescription(answer);
     await peerConnection.setRemoteDescription(remoteAnswer);
 
-    connectedUser['socketId'] = user.socketId;
-    connectedUser['userName'] = user.userName;
+    addPeerUserName(user.socketId, user.userName);
 
     socket.emit('acknowledgement');
   });
@@ -37,6 +98,15 @@ export default async function RTCPeerReceiver(peerConnection, socket, roomName, 
   await peerConnection.setLocalDescription(offer);
 
   socket.emit('joined-room', { offer, userName });
+
+  if (!peerConnection.onnegotiationneeded) {
+    peerConnection.onnegotiationneeded = async () => {
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+
+      socket.emit('joined-room', { offer, userName });
+    };
+  }
 
   return dataChannel;
 }

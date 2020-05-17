@@ -1,30 +1,121 @@
-export default async function RTCPeerSender(peerConnection, socket, { offer, user }, connectedUser, userName) {
-  peerConnection.addEventListener('icegatheringstatechange', status => {});
-
-  peerConnection.addEventListener('icecandidate', event => {
-    if (event.candidate) {
-      socket.emit('icecandidate', { candidate: event.candidate });
-    }
-  });
-
-  socket.on('onicecandidate', async ({ candidate }) => {
-    try {
-      if (candidate) {
-        await peerConnection.addIceCandidate(candidate);
+export default async function RTCPeerSender(
+    peerConnection,
+    socket,
+    { offer, user },
+    userName,
+    {
+      receivedMessage,
+      peerJoined,
+      addPeerUserName,
+      addDataChannel,
+      peerLeft,
+      incomingCall,
+      cancelledCall,
+      rejectedCall,
+      pickedUpCall
+    }, isNegotiation = false) {
+  if (!isNegotiation) {
+    peerConnection.addEventListener('icegatheringstatechange', status => {});
+  
+    peerConnection.addEventListener('icecandidate', event => {
+      if (event.candidate) {
+        socket.emit('icecandidate', { candidate: event.candidate });
       }
-    } catch (error) {
-      console.error('Error while adding icecandidate ', error);
-    }
-  });
+    });
+  
+    socket.on('onicecandidate', async ({ candidate }) => {
+      try {
+        if (candidate) {
+          await peerConnection.addIceCandidate(candidate);
+        }
+      } catch (error) {
+        console.error('Error while adding icecandidate ', error);
+      }
+    });
+
+    // For later negotiations
+    socket.on('accepted-offer', async ({ answer, user }) => {
+      const remoteAnswer = new RTCSessionDescription(answer);
+      await peerConnection.setRemoteDescription(remoteAnswer);
+  
+      socket.emit('acknowledgement');
+    });
+
+    socket.on('acknowledgement', () => {});
+
+    const onPeerLeave = () => {
+      socket.off('acknowledgement');
+      socket.off('accepted-offer');
+      socket.off('onicecandidate');
+      socket.off('disconnected');
+      socket.off('calling');
+      socket.off('cancelledCall');
+      socket.off('rejectedCall');
+      socket.off('pickedUpCall');
+      peerLeft();
+    };
+  
+    socket.on('disconnected', () => {
+      onPeerLeave();
+    });
+  
+    socket.on('calling', () => {
+      incomingCall();
+    });
+  
+    socket.on('cancelledCall', () => {
+      cancelledCall(true);
+    });
+  
+    socket.on('rejectedCall', () => {
+      rejectedCall(true);
+    });
+  
+    socket.on('pickedUpCall', () => {
+      pickedUpCall(true);
+    });
+
+    peerConnection.addEventListener('connectionstatechange', event => {
+      console.log('STATE', peerConnection.connectionState);
+      if (peerConnection.connectionState === 'connected') {
+        // Peers connected!
+        if (!isNegotiation) {
+          peerJoined();
+        }
+      } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
+        onPeerLeave();
+      }
+    });
+  
+    peerConnection.addEventListener('datachannel', event => {
+      const dataChannel = event.channel;
+  
+      dataChannel.addEventListener('open', event => {});
+  
+      dataChannel.addEventListener('close', event => {});
+  
+      dataChannel.addEventListener('message', event => {
+        receivedMessage(event.data);
+      });
+
+      addDataChannel(dataChannel);
+    });
+
+    peerConnection.onnegotiationneeded = async () => {
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+  
+      socket.emit('joined-room', { offer, userName });
+    };
+
+    addPeerUserName(user.socketId, user.userName);
+  }
 
   const remoteOffer = new RTCSessionDescription(offer);
   await peerConnection.setRemoteDescription(remoteOffer);
 
   const answer = await peerConnection.createAnswer();
   await peerConnection.setLocalDescription(answer);
-
-  connectedUser['socketId'] = user.socketId;
-  connectedUser['userName'] = user.userName;
 
   socket.emit('accepted-offer', { answer, userName });
 }

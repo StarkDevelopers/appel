@@ -17,6 +17,8 @@ class ConnectionPool {
     if (!this.connections[roomName].users) {
       this.connections[roomName].users = [];
     }
+    console.log(roomExist ? `${roomName} exists` : `${roomName} does no exist. Created.`);
+    console.log(`Users: ${this.connections[roomName].users.length}`);
     return { available: roomExist };
   }
 
@@ -30,7 +32,9 @@ class ConnectionPool {
           userName
         };
         // Reject if 2 users already exist
-        this.connections[roomName].users.push(user);
+        if (this.connections[roomName].users.findIndex(u => u.socketId === user.socketId) < 0) {
+          this.connections[roomName].users.push(user);
+        }
         userSocket.broadcast.emit('joined-room', { offer, user });
       });
       userSocket.on('accepted-offer', ({ answer, userName }) => {
@@ -39,7 +43,9 @@ class ConnectionPool {
           userName
         };
         // Reject if 2 users already exist
-        this.connections[roomName].users.push(user);
+        if (this.connections[roomName].users.findIndex(u => u.socketId === user.socketId) < 0) {
+          this.connections[roomName].users.push(user);
+        }
         userSocket.broadcast.emit('accepted-offer', { answer, user });
       });
       userSocket.on('acknowledgement', () => {
@@ -48,9 +54,35 @@ class ConnectionPool {
       userSocket.on('icecandidate', ({ candidate }) => {
         userSocket.broadcast.emit('onicecandidate', { candidate });
       });
+      userSocket.on('calling', () => {
+        userSocket.broadcast.emit('calling');
+      });
+      userSocket.on('cancelledCall', () => {
+        userSocket.broadcast.emit('cancelledCall');
+      });
+      userSocket.on('rejectedCall', () => {
+        userSocket.broadcast.emit('rejectedCall');
+      });
+      userSocket.on('pickedUpCall', () => {
+        userSocket.broadcast.emit('pickedUpCall');
+      });
+      userSocket.on('disconnectedCall', () => {
+        userSocket.broadcast.emit('disconnectedCall');
+      });
+      userSocket.on('videocam-mic-off', () => {
+        userSocket.broadcast.emit('videocam-mic-off');
+      });
       userSocket.on('disconnect', s => {
         console.log(`${userSocket.client.id} Left the Room ${roomName}`);
         this.connections[roomName].users = this.connections[roomName].users.filter(u => u.socketId !== userSocket.client.id);
+        userSocket.broadcast.emit('disconnected');
+
+        if (this.connections[roomName].users.length === 0) {
+          this.connections[roomName].socket.removeAllListeners();
+          this.connections[roomName].socket = null;
+          this.connections[roomName].users = null;
+          delete this.connections[roomName];
+        }
       });
     });
   }
