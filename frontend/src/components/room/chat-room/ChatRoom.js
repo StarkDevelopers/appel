@@ -43,7 +43,7 @@ class ChatRoom extends React.Component {
   }
 
   initRoom(data) {
-    this.socket = io(`http://localhost:8080/${this.props.roomName}`);
+    this.socket = io(`/${this.props.roomName}`);
     this.socket.on('connect', async () => {
       console.log('connected ', this.socket.id);
 
