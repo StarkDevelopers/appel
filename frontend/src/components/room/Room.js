@@ -5,12 +5,7 @@ import JoinRoom from './join-room/JoinRoom';
 import ChatRoom from './chat-room/ChatRoom';
 
 class Room extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
-    const { classes } = this.props;
     return (
       <React.Fragment>
         { !this.props.joinedRoom && <JoinRoom props={this.props} />}

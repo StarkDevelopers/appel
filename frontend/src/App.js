@@ -4,10 +4,6 @@ import Room from './components/room/Room';
 import { Route } from 'react-router-dom';
 
 class App extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
     return (
       <React.Fragment>

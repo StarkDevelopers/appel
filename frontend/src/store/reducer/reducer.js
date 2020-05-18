@@ -120,6 +120,20 @@ export const reducer = (state = initialState, action) => {
         ...state,
         micOff: action.status
       }
+    case 'FILE_UPLOADED': {
+      const messages = [].concat(state.messages);
+      messages.push({
+        type: 'FILE',
+        from: action.userName,
+        originalFileName: action.originalFileName,
+        fileName: action.fileName,
+        fileSize: action.fileSize
+      });
+      return {
+        ...state,
+        messages
+      }
+    }
     default:
       return state;
   }

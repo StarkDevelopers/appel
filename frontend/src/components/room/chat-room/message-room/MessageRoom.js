@@ -1,19 +1,22 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
-import { Grid, InputBase, Typography, IconButton } from '@material-ui/core';
-import { Send, AttachFile, VideoCall, FiberManualRecord } from '@material-ui/icons';
+import { Grid, InputBase, Typography, IconButton, Modal } from '@material-ui/core';
+import { Send, AttachFile, VideoCall, FiberManualRecord, GetApp } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
+import FileUpload from '../file-upload/FileUpload';
 
 class MessageRoom extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      message: ''
+      message: '',
+      fileUploadOpen: false
     };
     this.handleMessage = this.handleMessage.bind(this);
     this.handleSendMessage = this.handleSendMessage.bind(this);
+    this.handleOpenFileUpload = this.handleOpenFileUpload.bind(this);
   }
 
   handleMessage(event) {
@@ -34,6 +37,13 @@ class MessageRoom extends React.Component {
     }
   }
 
+  handleOpenFileUpload() {
+    const fileUploadOpen = !this.state.fileUploadOpen;
+    this.setState({
+      fileUploadOpen
+    });
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -46,7 +56,6 @@ class MessageRoom extends React.Component {
               <FiberManualRecord className={this.props.waitingForPeer ? classes.roomDeactivateStatus : classes.roomActivateStatus} />
             </Grid>
             <Grid item>
-              {/* disabled={this.props.waitingForPeer} */}
               <IconButton className={classes.submitButton} aria-label="videocall" disabled={this.props.waitingForPeer} onClick={this.props.calling}>
                 <VideoCall className={classes.icon} />
               </IconButton>
@@ -59,9 +68,32 @@ class MessageRoom extends React.Component {
             <Grid item className={classes.messages}>
               {this.props.messages.map((message, index) => (
                 <div className={classes.mBox} key={index}>
-                  { message.type && <Typography className={classes.peerJoinedStatus}>
+                  { message.type && ['CALL', 'PEER_JOINED', 'PEER_LEFT'].indexOf(message.type) > -1 && <Typography className={classes.peerJoinedStatus}>
                         {message.m}
                       </Typography> }
+                  { message.type && message.type === 'FILE' && <React.Fragment>
+                      <Typography className={classes.senderName}>
+                        {message.from}
+                      </Typography>
+                      <div className={classes.fileContainer}>
+                        <Typography className={classes.fileName}>
+                          {message.originalFileName}
+                        </Typography>
+                        <Typography className={classes.fileSize}>
+                          {message.fileSize}
+                        </Typography>
+                        <IconButton className={classes.fileDownload} aria-label="download-file">
+                          <a
+                            href={`api/download-file/${this.props.roomName}/${message.fileName}/${message.originalFileName}`}
+                            // onClick={e => e.preventDefault()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <GetApp className={classes.downloadIcon} />
+                          </a>
+                        </IconButton>
+                      </div>
+                    </React.Fragment> }
                   { !message.type && <React.Fragment>
                       <Typography className={classes.senderName}>
                         {message.from}
@@ -89,7 +121,7 @@ class MessageRoom extends React.Component {
                   disabled={this.props.waitingForPeer} />
               </Grid>
               <Grid item>
-                <IconButton className={classes.submitButton} aria-label="attachfile" disabled={this.props.waitingForPeer} color="primary">
+                <IconButton className={classes.submitButton} aria-label="attachfile" disabled={this.props.waitingForPeer} color="primary" onClick={this.handleOpenFileUpload}>
                   <AttachFile className={classes.icon} />
                 </IconButton>
               </Grid>
@@ -101,6 +133,13 @@ class MessageRoom extends React.Component {
             </Grid>
           </form>
         </Grid>
+        <Modal
+          open={this.state.fileUploadOpen}
+          aria-labelledby="File Upload"
+          aria-describedby="File Upload"
+        >
+          <FileUpload onClose={this.handleOpenFileUpload} onUploaded={this.props.onUploaded} />
+        </Modal>
       </Grid>
     );
   }

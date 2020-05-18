@@ -31,6 +31,7 @@ class ChatRoom extends React.Component {
     this.peerLeft = this.peerLeft.bind(this);
     this.initRoom = this.initRoom.bind(this);
     this.handleSendMessage = this.handleSendMessage.bind(this);
+    this.receivedMessage = this.receivedMessage.bind(this);
     this.calling = this.calling.bind(this);
     this.incomingCall = this.incomingCall.bind(this);
     this.cancelledCall = this.cancelledCall.bind(this);
@@ -38,6 +39,7 @@ class ChatRoom extends React.Component {
     this.pickedUpCall = this.pickedUpCall.bind(this);
     this.disconnectedCall = this.disconnectedCall.bind(this);
     this.closeCallNotification = this.closeCallNotification.bind(this);
+    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   initRoom(data) {
@@ -49,7 +51,7 @@ class ChatRoom extends React.Component {
         this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
 
         this.dataChannel = await RTCPeerReceiver(this.peerConnection, this.socket, this.props.roomName, this.props.userName, {
-          receivedMessage: this.props.receivedMessage,
+          receivedMessage: this.receivedMessage,
           addPeerUserName: this.props.addPeerUserName,
           peerJoined: this.peerJoined,
           peerLeft: this.peerLeft,
@@ -67,7 +69,7 @@ class ChatRoom extends React.Component {
         }
 
         await RTCPeerSender(this.peerConnection, this.socket, { offer, user }, this.props.userName, {
-          receivedMessage: this.props.receivedMessage,
+          receivedMessage: this.receivedMessage,
           addPeerUserName: this.props.addPeerUserName,
           peerJoined: this.peerJoined,
           addDataChannel: this.addDataChannel,
@@ -107,6 +109,7 @@ class ChatRoom extends React.Component {
     if (this.peerConnection) {
       this.peerConnection.close();
       this.peerConnection = null;
+      this.dataChannel = null;
     }
     this.isPeerJoined= false;
     if (!this.props.waitingForPeer) this.props.peerLeft();
@@ -117,6 +120,7 @@ class ChatRoom extends React.Component {
   }
 
   calling() {
+    this.socket.emit('calling');
     this.setState({
       openCalling: true
     });
@@ -176,6 +180,32 @@ class ChatRoom extends React.Component {
     }
   }
 
+  handleFileUpload(originalFileName, fileName, fileSize) {
+    if (this.dataChannel) {
+      const data = {
+        type: 'FILE',
+        originalFileName,
+        fileName,
+        fileSize,
+        userName: this.props.peerUserName.userName
+      };
+      this.dataChannel.send(JSON.stringify(data));
+      this.props.fileUploaded(originalFileName, fileName, fileSize, 'You');
+    }
+  }
+
+  receivedMessage(message) {
+    try {
+      message = JSON.parse(message);
+    } catch (e) {}
+
+    if (message.type === 'FILE') {
+      this.props.fileUploaded(message.originalFileName, message.fileName, message.fileSize, message.userName);
+    } else {
+      this.props.receivedMessage(message);
+    }
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -185,14 +215,16 @@ class ChatRoom extends React.Component {
           {/* Message Room */}
           { !this.props.inVideoCall && <MessageRoom
             handleSendMessage={this.handleSendMessage}
-            calling={this.calling} /> }
+            calling={this.calling}
+            onUploaded={this.handleFileUpload} /> }
           
           {/* Video Room */}
           { this.props.inVideoCall && <VideoRoom
             handleSendMessage={this.handleSendMessage}
             peerConnection={this.peerConnection}
             socket={this.socket}
-            onDisconnectCall={this.disconnectedCall} /> }
+            onDisconnectCall={this.disconnectedCall}
+            onUploaded={this.handleFileUpload} /> }
 
           <Snackbar
             className={classes.snackbar}
@@ -249,7 +281,8 @@ const mapDispatchToProps = dispatch => {
     sendMessage: message => dispatch({ type: 'SEND_MESSAGE', message }),
     addMessage: message => dispatch({ type: 'ADD_MESSAGE', message }),
     joinVideoCall: (join = true) => dispatch({ type: 'JOIN_VIDEO_CALL', join }),
-    disconnectedCall: message => dispatch({ type: 'DISCONNECT_CALL', message })
+    disconnectedCall: message => dispatch({ type: 'DISCONNECT_CALL', message }),
+    fileUploaded: (originalFileName, fileName, fileSize, userName) => dispatch({ type: 'FILE_UPLOADED', originalFileName, fileName, fileSize, userName })
   }
 };
 

@@ -1,11 +1,12 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
 import { Grid, Typography, Modal, Fab, InputBase, IconButton } from '@material-ui/core';
-import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat } from '@material-ui/icons';
+import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat, GetApp } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
 import PickInputDevice from './pick-input-device/PickInputDevice';
+import FileUpload from '../file-upload/FileUpload';
 
 class VideoRoom extends React.Component {
   constructor(props) {
@@ -22,7 +23,8 @@ class VideoRoom extends React.Component {
       videoDevice: '',
       enableVideoOverlay: false,
       message: '',
-      chatOpened: false
+      chatOpened: false,
+      fileUploadOpen: false
     };
     this.rtcRtpSenderAudio = null;
     this.rtcRtpSenderVideo = null;
@@ -45,6 +47,7 @@ class VideoRoom extends React.Component {
     this.handleMessage = this.handleMessage.bind(this);
     this.handleSendMessage = this.handleSendMessage.bind(this);
     this.openChat = this.openChat.bind(this);
+    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   componentDidMount() {
@@ -278,6 +281,13 @@ class VideoRoom extends React.Component {
     });
   }
 
+  handleFileUpload() {
+    const fileUploadOpen = !this.state.fileUploadOpen;
+    this.setState({
+      fileUploadOpen
+    });
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -311,9 +321,29 @@ class VideoRoom extends React.Component {
               <Grid item className={classes.messages}>
                 {this.props.messages.map((message, index) => (
                   <div className={classes.mBox} key={index}>
-                    { message.type && <Typography className={classes.peerJoinedStatus}>
-                        {message.m}
-                      </Typography> }
+                    { message.type && message.type === 'FILE' && <React.Fragment>
+                        <Typography className={classes.senderName}>
+                          {message.from}
+                        </Typography>
+                        <div container className={classes.fileContainer}>
+                          <Typography className={classes.fileName}>
+                            {message.originalFileName}
+                          </Typography>
+                          <Typography className={classes.fileSize}>
+                            {message.fileSize}
+                          </Typography>
+                          <IconButton className={classes.fileDownload} aria-label="download-file">
+                            <a
+                              href={`api/download-file/${this.props.roomName}/${message.fileName}/${message.originalFileName}`}
+                              // onClick={e => e.preventDefault()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <GetApp className={classes.downloadIcon} />
+                            </a>
+                          </IconButton>
+                        </div>
+                      </React.Fragment> }
                     { !message.type && <React.Fragment>
                         <Typography className={classes.senderName}>
                           {message.from}
@@ -339,11 +369,6 @@ class VideoRoom extends React.Component {
                     onChange={this.handleMessage}
                     placeholder="Type Message..."
                     disabled={this.props.waitingForPeer} />
-                </Grid>
-                <Grid item>
-                  <IconButton className={classes.submitButton} aria-label="attachfile" disabled={this.props.waitingForPeer} color="primary">
-                    <AttachFile className={classes.icon} />
-                  </IconButton>
                 </Grid>
                 <Grid item>
                   <IconButton type="submit" className={classes.submitButton} aria-label="send" disabled={this.props.waitingForPeer} color="primary">
@@ -385,6 +410,11 @@ class VideoRoom extends React.Component {
               </Fab>
             </Grid>
             <Grid item>
+              <Fab className={classes.videoAction} color={this.state.fileUploadOpen ? 'primary' : ''} aria-label="file-upload" onClick={this.handleFileUpload}>
+                <AttachFile />
+              </Fab>
+            </Grid>
+            <Grid item>
               <Fab className={classes.videoAction} color="secondary" aria-label="callEnd" onClick={() => this.disconnectedCall()}>
                 <CallEnd />
               </Fab>
@@ -397,6 +427,13 @@ class VideoRoom extends React.Component {
           aria-describedby="Pick Audio/Video Devices"
         >
           <PickInputDevice onClose={this.handleClosePickInputDevice} />
+        </Modal>
+        <Modal
+          open={this.state.fileUploadOpen}
+          aria-labelledby="File Upload"
+          aria-describedby="File Upload"
+        >
+          <FileUpload onClose={this.handleFileUpload} onUploaded={this.props.onUploaded} />
         </Modal>
       </Grid>
     );

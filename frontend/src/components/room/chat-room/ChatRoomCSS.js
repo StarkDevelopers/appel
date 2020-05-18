@@ -182,5 +182,32 @@ export default (reactTheme) => {
       height: '3rem',
       width: '100%'
     },
+    fileContainer: {
+      color: '#999999',
+      backgroundColor: '#333333',
+      padding: '0.25rem 1rem',
+      fontSize: '1rem',
+      borderRadius: '1rem',
+      display: 'inline-block'
+    },
+    fileName: {
+      display: 'inline',
+      marginRight: '1rem'
+    },
+    fileSize: {
+      display: 'inline',
+      fontSize: '0.8rem',
+      marginRight: '2rem'
+    },
+    fileDownload: {
+      display: 'inline',
+      padding: '0',
+      color: '#FFFFFF'
+    },
+    downloadIcon: {
+      color: '#FFFFFF',
+      height: '2rem',
+      padding: '0.25rem'
+    }
   }
 }

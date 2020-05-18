@@ -27,6 +27,10 @@ if (CONTEXT === 'DEVELOPMENT') {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
+// Initialize Multer for parsing multi-part form data
+const fileUpload = require('./middlewares/multer/multer')();
+app.fileUpload = fileUpload;
+
 // Initialize Socket
 const io = require('socket.io')(http);
 
