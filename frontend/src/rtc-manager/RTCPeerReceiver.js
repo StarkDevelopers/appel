@@ -94,10 +94,10 @@ export default async function RTCPeerReceiver(
   });
 
   socket.on('accepted-offer', async ({ answer, user }) => {
+    addPeerUserName(user.socketId, user.userName);
+
     const remoteAnswer = new RTCSessionDescription(answer);
     await peerConnection.setRemoteDescription(remoteAnswer);
-
-    addPeerUserName(user.socketId, user.userName);
 
     socket.emit('acknowledgement');
   });
