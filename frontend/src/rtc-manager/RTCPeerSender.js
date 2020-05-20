@@ -15,14 +15,12 @@ export default async function RTCPeerSender(
       pickedUpCall
     }, isNegotiation = false) {
   if (!isNegotiation) {
-    peerConnection.addEventListener('icegatheringstatechange', status => {});
-  
     peerConnection.addEventListener('icecandidate', event => {
       if (event.candidate) {
         socket.emit('icecandidate', { candidate: event.candidate });
       }
     });
-  
+
     socket.on('onicecandidate', async ({ candidate }) => {
       try {
         if (candidate) {
@@ -31,6 +29,28 @@ export default async function RTCPeerSender(
       } catch (error) {
         console.error('Error while adding icecandidate ', error);
       }
+    });
+
+    peerConnection.addEventListener('icegatheringstatechange', status => {
+      console.log('connectionState', peerConnection.connectionState);
+      console.log('iceConnectionState', peerConnection.iceConnectionState);
+    });
+
+    peerConnection.addEventListener('iceconnectionstatechange', status => {
+      console.log('connectionState', peerConnection.connectionState);
+      console.log('iceConnectionState', peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'connected') {
+        // Peers connected!
+        if (!isNegotiation) {
+          peerJoined();
+        }
+      } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
+        onPeerLeave();
+      }
+    });
+
+    peerConnection.addEventListener('connectionstatechange', event => {
+      console.log('connectionState', peerConnection.connectionState);
     });
 
     // For later negotiations
@@ -73,18 +93,6 @@ export default async function RTCPeerSender(
   
     socket.on('pickedUpCall', () => {
       pickedUpCall(true);
-    });
-
-    peerConnection.addEventListener('connectionstatechange', event => {
-      console.log('STATE', peerConnection.connectionState);
-      if (peerConnection.connectionState === 'connected') {
-        // Peers connected!
-        if (!isNegotiation) {
-          peerJoined();
-        }
-      } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
-        onPeerLeave();
-      }
     });
   
     peerConnection.addEventListener('datachannel', event => {

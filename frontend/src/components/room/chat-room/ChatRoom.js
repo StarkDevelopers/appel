@@ -20,7 +20,17 @@ class ChatRoom extends React.Component {
       openIncomingCall: false,
       openCalling: false
     };
-    this.iceConfiguration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] };
+    this.iceConfiguration = {
+      'iceServers': [
+        { 'urls': 'stun:stun.l.google.com:19302' },
+        { 'urls': 'stun:stun.xpert.ly:5349' },
+        {
+          'urls': 'turn:turn.xpert.ly:5349',
+          'username': 'turnserveruser',
+          'credential': 'N0Pa$$word'
+      }
+      ]
+    };
     this.socket = null;
     this.peerConnection = null;
     this.dataChannel = null;

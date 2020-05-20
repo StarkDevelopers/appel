@@ -13,8 +13,6 @@ export default async function RTCPeerReceiver(
       rejectedCall,
       pickedUpCall
     }) {
-  peerConnection.addEventListener('icegatheringstatechange', status => {});
-
   peerConnection.addEventListener('icecandidate', event => {
     if (event.candidate) {
       socket.emit('icecandidate', { candidate: event.candidate });
@@ -29,6 +27,26 @@ export default async function RTCPeerReceiver(
     } catch (error) {
       console.error('Error while adding icecandidate ', error);
     }
+  });
+
+  peerConnection.addEventListener('icegatheringstatechange', status => {
+    console.log('connectionState', peerConnection.connectionState);
+    console.log('iceConnectionState', peerConnection.iceConnectionState);
+  });
+
+  peerConnection.addEventListener('iceconnectionstatechange', status => {
+    console.log('connectionState', peerConnection.connectionState);
+    console.log('iceConnectionState', peerConnection.iceConnectionState);
+    if (peerConnection.iceConnectionState === 'connected') {
+      // Peers connected!
+      peerJoined();
+    } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
+      onPeerLeave();
+    }
+  });
+
+  peerConnection.addEventListener('connectionstatechange', event => {
+    console.log('STATE', peerConnection.connectionState);
   });
 
   socket.on('acknowledgement', () => {});
@@ -47,16 +65,6 @@ export default async function RTCPeerReceiver(
 
   socket.on('disconnected', () => {
     onPeerLeave();
-  });
-
-  peerConnection.addEventListener('connectionstatechange', event => {
-    console.log('STATE', peerConnection.connectionState);
-    if (peerConnection.connectionState === 'connected') {
-      // Peers connected!
-      peerJoined();
-    } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
-      onPeerLeave();
-    }
   });
 
   const dataChannel = peerConnection.createDataChannel(roomName);
