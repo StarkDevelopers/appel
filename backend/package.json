@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon server.js",
-    "frontend": "cd ../frontend && npm run build && cd build && copyfiles \"./**/*\" ../../backend/client && cd ../../backend",
+    "frontend": "rimraf client && cd ../frontend && npm run build && cd build && copyfiles \"./**/*\" ../../backend/client && cd ../../backend",
     "start": "npm run frontend && node server.js",
     "lint": "eslint ."
   },
@@ -20,6 +20,7 @@
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
-    "prettier": "^2.0.5"
+    "prettier": "^2.0.5",
+    "rimraf": "^3.0.2"
   }
 }
