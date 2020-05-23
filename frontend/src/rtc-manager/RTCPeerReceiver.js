@@ -40,13 +40,16 @@ export default async function RTCPeerReceiver(
     if (peerConnection.iceConnectionState === 'connected') {
       // Peers connected!
       peerJoined();
-    } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
+    } else if (['closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
       onPeerLeave();
     }
   });
 
   peerConnection.addEventListener('connectionstatechange', event => {
     console.log('STATE', peerConnection.connectionState);
+    if (['closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
+      onPeerLeave();
+    }
   });
 
   socket.on('acknowledgement', () => {});

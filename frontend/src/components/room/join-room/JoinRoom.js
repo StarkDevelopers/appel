@@ -78,7 +78,7 @@ class JoinRoom extends React.Component {
         <Grid item xs={11} sm={9} md={5} lg={4} xl={3} className={classes.box}>
           <Grid container justify="center">
             <Grid item xs={12} className={classes.title}>
-              Appel
+              Xpert.ly
             </Grid>
             <Grid item xs={12} className={classes.room}>
               <InputBase

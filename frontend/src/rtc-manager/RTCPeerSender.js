@@ -44,13 +44,16 @@ export default async function RTCPeerSender(
         if (!isNegotiation) {
           peerJoined();
         }
-      } else if (['disconnected', 'closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
+      } else if (['closed', 'failed'].indexOf(peerConnection.iceConnectionState) > -1) {
         onPeerLeave();
       }
     });
-
+  
     peerConnection.addEventListener('connectionstatechange', event => {
-      console.log('connectionState', peerConnection.connectionState);
+      console.log('STATE', peerConnection.connectionState);
+      if (['closed', 'failed'].indexOf(peerConnection.connectionState) > -1) {
+        onPeerLeave();
+      }
     });
 
     // For later negotiations

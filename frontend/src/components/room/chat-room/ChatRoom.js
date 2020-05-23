@@ -23,9 +23,9 @@ class ChatRoom extends React.Component {
     this.iceConfiguration = {
       'iceServers': [
         { 'urls': 'stun:stun.l.google.com:19302' },
-        { 'urls': 'stun:stun.xpert.ly:5349' },
+        { 'urls': 'stun:stun.xpert.ly:3478' },
         {
-          'urls': 'turn:turn.xpert.ly:5349',
+          'urls': 'turn:turn.xpert.ly:3478',
           'username': 'turnserveruser',
           'credential': 'N0Pa$$word'
       }

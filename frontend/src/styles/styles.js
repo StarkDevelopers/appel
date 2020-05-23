@@ -7,7 +7,7 @@ export const STYLES = {
   title: {
     textAlign: 'center',
     fontFamily: "'Limelight', cursive",
-    textDecoration: 'underline',
+    // textDecoration: 'underline',
     fontSize: '3rem',
     color: '#999999',
     marginBottom: '0.50rem'

@@ -53,6 +53,7 @@ class VideoRoom extends React.Component {
   componentDidMount() {
     this.timerInterval = setInterval(() => this.time += 1, 1000);
 
+    console.log(this.videoRef.current);
     if ('srcObject' in this.videoRef.current) {
       this.videoRef.current.srcObject = this.state.videoStream;
       this.remoteVideoRef.current.srcObject = this.state.remoteVideoStream;
@@ -62,6 +63,7 @@ class VideoRoom extends React.Component {
     }
 
     this.props.peerConnection.ontrack = event => {
+      console.log('received track');
       this.state.remoteVideoStream.addTrack(event.track, event.stream);
 
       this.setState({
