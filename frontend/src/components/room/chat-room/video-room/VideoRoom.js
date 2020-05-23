@@ -307,12 +307,12 @@ class VideoRoom extends React.Component {
         <Grid item className={classes.videoBox}>
           <Grid container className={classes.videoContainer}>
             <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.videoRef} autoPlay controls={false} muted={true} ></video>
+              <video className={classes.video} ref={this.videoRef} autoPlay controls={false} muted={true} playsinline ></video>
               { (this.state.videoStream.getVideoTracks().length === 0 || this.state.videoStream.getVideoTracks()[0].readyState === 'ended') && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{`You(${this.props.userName})`}</Typography>
             </Grid>
             <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.remoteVideoRef} autoPlay controls={false} ></video>
+              <video className={classes.video} ref={this.remoteVideoRef} autoPlay controls={false} playsinline ></video>
               { (this.state.remoteVideoStream.getVideoTracks().length === 0 || this.state.remoteVideoStream.getVideoTracks()[0].readyState === 'ended' || this.state.enableVideoOverlay) && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{this.props.peerUserName ? this.props.peerUserName.userName : ''}</Typography>
             </Grid>
