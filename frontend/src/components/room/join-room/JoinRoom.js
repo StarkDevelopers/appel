@@ -30,9 +30,6 @@ class JoinRoom extends React.Component {
     this.handleAlertClose = this.handleAlertClose.bind(this);
   }
 
-  componentDidMount() {
-  }
-
   roomNameChange(event) {
     this.setState({
       roomName: event.target.value

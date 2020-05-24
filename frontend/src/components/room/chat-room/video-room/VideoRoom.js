@@ -15,19 +15,19 @@ class VideoRoom extends React.Component {
     this.remoteVideoRef = React.createRef();
     this.state = {
       openPickInputDevice: true,
-      videoStream: new MediaStream(),
-      remoteVideoStream: new MediaStream(),
       videoCamOff: false,
       micOff: false,
-      audioDevice: '',
-      videoDevice: '',
-      enableVideoOverlay: false,
       message: '',
       chatOpened: false,
       fileUploadOpen: false
     };
-    this.rtcRtpSenderAudio = null;
-    this.rtcRtpSenderVideo = null;
+    // Audio/Video Device ID
+    this.audioDeviceId = null;
+    this.videoDeviceId = null;
+    // Streams
+    this.videoStream = new MediaStream();
+    this.remoteVideoStream = new MediaStream();
+
     // Timeout for removing video-audio tracks from local stream
     this.videoCleanUpTimeout = null;
     this.addedRemoteTracks = [];
@@ -35,14 +35,15 @@ class VideoRoom extends React.Component {
     this.time = 0;
     this.timerInterval = null;
 
+    this.disconnectedListener = null;
+
     this.cleanVideoStream = this.cleanVideoStream.bind(this);
-    this.cleanRemoteVideoStream = this.cleanRemoteVideoStream.bind(this);
-    this.clearRemoteAudio = this.clearRemoteAudio.bind(this);
-    this.clearRemoteVideo = this.clearRemoteVideo.bind(this);
     this.handleClosePickInputDevice = this.handleClosePickInputDevice.bind(this);
     this.initVideoCall = this.initVideoCall.bind(this);
     this.handleVideoCamOff = this.handleVideoCamOff.bind(this);
+    this.enableVideoCamOff = this.enableVideoCamOff.bind(this);
     this.handleMicOff = this.handleMicOff.bind(this);
+    this.enableMicOff = this.enableMicOff.bind(this);
     this.disconnectedCall = this.disconnectedCall.bind(this);
     this.handleMessage = this.handleMessage.bind(this);
     this.handleSendMessage = this.handleSendMessage.bind(this);
@@ -55,154 +56,93 @@ class VideoRoom extends React.Component {
 
     console.log(this.videoRef.current);
     if ('srcObject' in this.videoRef.current) {
-      this.videoRef.current.srcObject = this.state.videoStream;
-      this.remoteVideoRef.current.srcObject = this.state.remoteVideoStream;
+      this.videoRef.current.srcObject = this.videoStream;
+      this.remoteVideoRef.current.srcObject = this.remoteVideoStream;
     } else {
-      this.videoRef.current.src = window.URL.createObjectURL(this.state.videoStream);
-      this.remoteVideoRef.current.src = window.URL.createObjectURL(this.state.remoteVideoStream);
+      this.videoRef.current.src = window.URL.createObjectURL(this.videoStream);
+      this.remoteVideoRef.current.src = window.URL.createObjectURL(this.remoteVideoStream);
     }
 
     this.props.peerConnection.ontrack = event => {
       console.log('received track');
-      this.state.remoteVideoStream.addTrack(event.track, event.stream);
 
-      this.setState({
-        enableVideoOverlay: false,
-        remoteVideoStream: this.state.remoteVideoStream
-      });
-
-      this.addedRemoteTracks.push(event.track.id);
-      if (this.videoCleanUpTimeout) {
-        clearTimeout(this.videoCleanUpTimeout);
+      this.remoteVideoStream = event.streams[0];
+      if ('srcObject' in this.remoteVideoRef.current) {
+        this.remoteVideoRef.current.srcObject = event.streams[0];
+      } else {
+        this.remoteVideoRef.current.src = window.URL.createObjectURL(event.streams[0]);
       }
-      this.videoCleanUpTimeout = setTimeout(() => {
-        this.cleanRemoteVideoStream();
-      });
     };
-
-    this.props.socket.on('videocam-mic-off', () => {
-      this.setState({
-        enableVideoOverlay: true
-      });
-    });
 
     this.props.socket.on('disconnectedCall', () => {
       this.disconnectedCall(true);
     });
 
-    this.props.socket.on('disconnected', () => {
+    this.disconnectedListener = () => {
       this.disconnectedCall(true);
-    });
+    }
+
+    this.props.socket.on('disconnected', this.disconnectedListener);
   }
 
   componentWillUnmount() {
     // Remove listeners
-    this.props.socket.off('videocam-mic-off');
     this.props.socket.off('disconnectedCall');
-    this.props.socket.off('disconnected');
+    this.props.socket.removeListener('disconnected', this.disconnectedListener);
 
     if (this.props.peerConnection) {
       this.props.peerConnection.ontrack = null;
     }
 
-    // Clean up Remote/Local Stream Tracks
-    this.cleanRemoteVideoStream();
+    // Clean up Local Stream Tracks
     this.cleanVideoStream();
 
     // Clear Timer Interval
     clearInterval(this.timerInterval);
   }
 
-  initVideoCall(micOff = false, videoCamOff = false) {
-    let audioDevice = false;
-    let videoDevice = false;
+  initVideoCall(micOff = false, videoCamOff = false, audioDoesNotExist = false, videoDoesNotExist = false) {
+    const audioDevice = this.audioDeviceId ? { deviceId: { exact: this.audioDeviceId } } : true;
+    const videoDevice = this.videoDeviceId ? { deviceId: { exact: this.videoDeviceId } } : true;
 
-    if (!micOff) audioDevice = this.props.audioDeviceId ? { deviceId: { exact: this.state.audioDeviceId } } : true;
-    if (!videoCamOff) videoDevice = this.props.videoDeviceId ? { deviceId: { exact: this.state.videoDeviceId } } : true;
-
-    if (!micOff || !videoCamOff) {
-      navigator.mediaDevices.getUserMedia({ audio: audioDevice, video: videoDevice })
+    if (!audioDoesNotExist || !videoDoesNotExist) {
+      navigator.mediaDevices.getUserMedia({ audio: !audioDoesNotExist ? audioDevice : false, video: !videoDoesNotExist ? videoDevice : false })
         .then(stream => {
-          this.cleanVideoStream();
-
-          if (micOff && this.rtcRtpSenderAudio) {
-            this.clearRemoteAudio();
-          }
-          if (videoCamOff && this.rtcRtpSenderVideo) {
-            this.clearRemoteVideo();
-          }
+          this.videoStream = stream;
 
           stream.getTracks().forEach(track => {
-            this.state.videoStream.addTrack(track, stream);
+            if ('srcObject' in this.videoRef.current) {
+              this.videoRef.current.srcObject = stream;
+            } else {
+              this.videoRef.current.src = window.URL.createObjectURL(stream);
+            }
 
-            if (track.kind === 'audio' && !micOff) {
-              this.rtcRtpSenderAudio = this.props.peerConnection.addTrack(track, stream);
+            if (track.kind === 'audio') {
+              this.enableMicOff(micOff);
+              this.props.peerConnection.addTrack(track, stream);
             }
-            if (track.kind === 'video' && !videoCamOff) {
-              this.rtcRtpSenderVideo = this.props.peerConnection.addTrack(track, stream);
+            if (track.kind === 'video') {
+              this.enableVideoCamOff(videoCamOff);
+              this.props.peerConnection.addTrack(track, stream);
             }
-          });
-          this.setState({
-            videoStream: this.state.videoStream
           });
         })
         .catch(error => {
           console.error(error);
         });
     }
-    if (micOff && videoCamOff) {
-      this.cleanVideoStream();
-
-      if (micOff && this.rtcRtpSenderAudio) {
-        this.clearRemoteAudio();
-      }
-      if (videoCamOff && this.rtcRtpSenderVideo) {
-        this.clearRemoteVideo();
-      }
-
-      this.props.socket.emit('videocam-mic-off');
-
-      this.setState({
-        videoStream: this.state.videoStream
-      });
-    }
   }
 
   cleanVideoStream() {
     const oldTracks = [];
-    this.state.videoStream.getTracks().forEach(t => oldTracks.push(t));
+    this.videoStream.getTracks().forEach(t => oldTracks.push(t));
     oldTracks.forEach(t => {
       t.stop();
-      this.state.videoStream.removeTrack(t);
+      this.videoStream.removeTrack(t);
     });
   }
 
-  cleanRemoteVideoStream() {
-    const addedTracks = [].concat(this.addedRemoteTracks);
-    this.addedRemoteTracks = [];
-    this.videoCleanUpTimeout = null;
-
-    const oldTracks = [];
-    this.state.remoteVideoStream.getTracks().forEach(t => {
-      if (addedTracks.indexOf(t.id) < 0) oldTracks.push(t);
-    });
-    oldTracks.forEach(t => {
-      t.stop();
-      this.state.remoteVideoStream.removeTrack(t);
-    });
-  }
-
-  clearRemoteAudio() {
-    this.props.peerConnection.removeTrack(this.rtcRtpSenderAudio);
-    this.rtcRtpSenderAudio = null;
-  }
-
-  clearRemoteVideo() {
-    this.props.peerConnection.removeTrack(this.rtcRtpSenderVideo);
-    this.rtcRtpSenderVideo = null;
-  }
-
-  handleClosePickInputDevice(audioDevice, videoDevice, videoCamOff, micOff) {
+  handleClosePickInputDevice(audioDevice, videoDevice, videoCamOff, micOff, audioDoesNotExist, videoDoesNotExist) {
     if (audioDevice === undefined && videoDevice === undefined && videoCamOff === undefined && micOff === undefined) {
       micOff = this.state.micOff;
       videoCamOff = this.state.videoCamOff;
@@ -210,29 +150,43 @@ class VideoRoom extends React.Component {
         openPickInputDevice: false
       });
     } else {
+      this.audioDeviceId = audioDevice;
+      this.videoDeviceId = videoDevice;
       this.setState({
         openPickInputDevice: false,
-        audioDevice,
-        videoDevice,
         videoCamOff,
-        micOff
+        micOff,
+        audioDoesNotExist,
+        videoDoesNotExist
       });
     }
-    this.initVideoCall(micOff, videoCamOff);
+    this.initVideoCall(micOff, videoCamOff, audioDoesNotExist, videoDoesNotExist);
+  }
+
+  enableVideoCamOff(off) {
+    this.videoStream.getVideoTracks().forEach(t => {
+      t.enabled = !off;
+    });
   }
 
   handleVideoCamOff(off = true) {
     this.setState({
       videoCamOff: off
     });
-    this.initVideoCall(this.state.micOff, off);
+    this.enableVideoCamOff(off);
+  }
+
+  enableMicOff(off) {
+    this.videoStream.getAudioTracks().forEach(t => {
+      t.enabled = !off;
+    });
   }
 
   handleMicOff(off = true) {
     this.setState({
       micOff: off
     });
-    this.initVideoCall(off, this.state.videoCamOff);
+    this.enableMicOff(off);
   }
 
   handleMessage(event) {
@@ -307,13 +261,11 @@ class VideoRoom extends React.Component {
         <Grid item className={classes.videoBox}>
           <Grid container className={classes.videoContainer}>
             <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.videoRef} autoPlay controls={false} muted={true} playsinline ></video>
-              { (this.state.videoStream.getVideoTracks().length === 0 || this.state.videoStream.getVideoTracks()[0].readyState === 'ended') && <div className={classes.videoOverlay}></div>}
+              <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} muted={true} playsInline={true} ></video>
               <Typography className={classes.videoUserName}>{`You(${this.props.userName})`}</Typography>
             </Grid>
             <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.remoteVideoRef} autoPlay controls={false} playsinline ></video>
-              { (this.state.remoteVideoStream.getVideoTracks().length === 0 || this.state.remoteVideoStream.getVideoTracks()[0].readyState === 'ended' || this.state.enableVideoOverlay) && <div className={classes.videoOverlay}></div>}
+              <video className={classes.video} ref={this.remoteVideoRef} autoPlay={true} controls={false} playsInline={true} ></video>
               <Typography className={classes.videoUserName}>{this.props.peerUserName ? this.props.peerUserName.userName : ''}</Typography>
             </Grid>
           </Grid>
@@ -386,23 +338,23 @@ class VideoRoom extends React.Component {
           <Grid container justify="center" alignItems="center">
             <Grid item>
               {/* Video Cam Off */}
-              { this.state.videoCamOff && <Fab className={classes.videoAction} color="secondary" aria-label="videoCamOff" onClick={() => this.handleVideoCamOff(false)}>
+              { this.state.videoCamOff && <Fab className={classes.videoAction} color="secondary" aria-label="videoCamOff" disabled={this.state.videoDoesNotExist} onClick={() => this.handleVideoCamOff(false)}>
                 <VideocamOff />
               </Fab> }
 
               {/* Video Cam On */}
-              { !this.state.videoCamOff && <Fab className={classes.videoAction} aria-label="videoCamOn" onClick={() => this.handleVideoCamOff(true)}>
+              { !this.state.videoCamOff && <Fab className={classes.videoAction} aria-label="videoCamOn" disabled={this.state.videoDoesNotExist} onClick={() => this.handleVideoCamOff(true)}>
                 <Videocam />
               </Fab> }
             </Grid>
             <Grid item>
               {/* Mic Off */}
-              { this.state.micOff && <Fab className={classes.videoAction} color="secondary" aria-label="micOff" onClick={() => this.handleMicOff(false)}>
+              { this.state.micOff && <Fab className={classes.videoAction} color="secondary" aria-label="micOff" disabled={this.state.audioDoesNotExist} onClick={() => this.handleMicOff(false)}>
                 <MicOff />
               </Fab> }
 
               {/* Mic On */}
-              { !this.state.micOff && <Fab className={classes.videoAction} aria-label="micOn" onClick={() => this.handleMicOff(true)}>
+              { !this.state.micOff && <Fab className={classes.videoAction} aria-label="micOn" disabled={this.state.audioDoesNotExist} onClick={() => this.handleMicOff(true)}>
                 <Mic />
               </Fab> }
             </Grid>
