@@ -69,8 +69,8 @@ class ConnectionPool {
       userSocket.on('disconnectedCall', () => {
         userSocket.broadcast.emit('disconnectedCall');
       });
-      userSocket.on('videocam-mic-off', () => {
-        userSocket.broadcast.emit('videocam-mic-off');
+      userSocket.on('camStatus', off => {
+        userSocket.broadcast.emit('camStatus', off);
       });
       userSocket.on('disconnect', s => {
         console.log(`${userSocket.client.id} Left the Room ${roomName}`);

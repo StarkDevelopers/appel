@@ -19,7 +19,8 @@ class VideoRoom extends React.Component {
       micOff: false,
       message: '',
       chatOpened: false,
-      fileUploadOpen: false
+      fileUploadOpen: false,
+      remoteCamOff: false
     };
     // Audio/Video Device ID
     this.audioDeviceId = null;
@@ -74,6 +75,12 @@ class VideoRoom extends React.Component {
       }
     };
 
+    this.props.socket.on('camStatus', off => {
+      this.setState({
+        remoteCamOff: off
+      });
+    });
+
     this.props.socket.on('disconnectedCall', () => {
       this.disconnectedCall(true);
     });
@@ -87,6 +94,7 @@ class VideoRoom extends React.Component {
 
   componentWillUnmount() {
     // Remove listeners
+    this.props.socket.off('camStatus');
     this.props.socket.off('disconnectedCall');
     this.props.socket.removeListener('disconnected', this.disconnectedListener);
 
@@ -118,11 +126,11 @@ class VideoRoom extends React.Component {
             }
 
             if (track.kind === 'audio') {
-              this.enableMicOff(micOff);
+              if (micOff) this.enableMicOff(micOff);
               this.props.peerConnection.addTrack(track, stream);
             }
             if (track.kind === 'video') {
-              this.enableVideoCamOff(videoCamOff);
+              if (videoCamOff) this.enableVideoCamOff(videoCamOff);
               this.props.peerConnection.addTrack(track, stream);
             }
           });
@@ -164,6 +172,7 @@ class VideoRoom extends React.Component {
   }
 
   enableVideoCamOff(off) {
+    this.props.socket.emit('camStatus', off);
     this.videoStream.getVideoTracks().forEach(t => {
       t.enabled = !off;
     });
@@ -262,10 +271,12 @@ class VideoRoom extends React.Component {
           <Grid container className={classes.videoContainer}>
             <Grid item xs={12} md={6} className={classes.videoItem}>
               <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} muted={true} playsInline={true} ></video>
+              { this.state.videoCamOff && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{`You(${this.props.userName})`}</Typography>
             </Grid>
             <Grid item xs={12} md={6} className={classes.videoItem}>
               <video className={classes.video} ref={this.remoteVideoRef} autoPlay={true} controls={false} playsInline={true} ></video>
+              { this.state.remoteCamOff && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{this.props.peerUserName ? this.props.peerUserName.userName : ''}</Typography>
             </Grid>
           </Grid>
