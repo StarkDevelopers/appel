@@ -25,12 +25,6 @@ class FileUpload extends React.Component {
     this.uploadFile = this.uploadFile.bind(this);
   }
 
-  componentDidMount() {
-  }
-
-  componentWillUnmount() {
-  }
-
   getSize(size) {
     const MB = 1024 * 1024;
     const KB = 1024;
@@ -60,7 +54,7 @@ class FileUpload extends React.Component {
       const index = file.name.indexOf('.');
       if (index > -1) {
         const extension = file.name.substring(index + 1);
-        if (this.allowedExtensions.indexOf(extension) < 0) {
+        if (this.allowedExtensions.indexOf(extension.toLowerCase()) < 0) {
           this.setState({
             file: null,
             fileSize: null,

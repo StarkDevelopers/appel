@@ -24,8 +24,8 @@ if (CONTEXT === 'DEVELOPMENT') {
 }
 
 // Enable Parsing Body of incoming request
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
 
 // Initialize Multer for parsing multi-part form data
 const fileUpload = require('./middlewares/multer/multer')();

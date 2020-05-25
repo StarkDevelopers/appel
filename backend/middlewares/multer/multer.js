@@ -18,8 +18,8 @@ function init() {
       return cb(null, `${uniqueSuffix}_${file.originalname}`);
     }
   });
-  
-  return multer({ storage: storage });
+
+  return multer({ storage: storage, limits: { fieldSize: 52428800 } });
 }
 
 module.exports = init;
