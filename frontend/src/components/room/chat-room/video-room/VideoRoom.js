@@ -20,7 +20,9 @@ class VideoRoom extends React.Component {
       message: '',
       chatOpened: false,
       fileUploadOpen: false,
-      remoteCamOff: false
+      remoteCamOff: false,
+      audioDoesNotExist: false,
+      videoDoesNotExist: false
     };
     // Audio/Video Device ID
     this.audioDeviceId = null;
@@ -168,6 +170,9 @@ class VideoRoom extends React.Component {
         videoDoesNotExist
       });
     }
+    if (videoDoesNotExist) {
+      this.props.socket.emit('camStatus', true);
+    }
     this.initVideoCall(micOff, videoCamOff, audioDoesNotExist, videoDoesNotExist);
   }
 
@@ -271,7 +276,7 @@ class VideoRoom extends React.Component {
           <Grid container className={classes.videoContainer}>
             <Grid item xs={12} md={6} className={classes.videoItem}>
               <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} muted={true} playsInline={true} ></video>
-              { this.state.videoCamOff && <div className={classes.videoOverlay}></div>}
+              { (this.state.videoCamOff || this.state.videoDoesNotExist) && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{`You(${this.props.userName})`}</Typography>
             </Grid>
             <Grid item xs={12} md={6} className={classes.videoItem}>
