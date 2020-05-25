@@ -71,7 +71,7 @@ class PickInputDevice extends React.Component {
               stream.getTracks().forEach(t => t.stop());
 
               if (devices.find(d => !d.label)) {
-                return initDevices();
+                return this.initDevices();
               }
 
               // Reset Audio-Video devices if they are in use and they are not available anymore
