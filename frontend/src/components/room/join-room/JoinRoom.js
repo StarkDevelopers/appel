@@ -8,26 +8,35 @@ class JoinRoom extends React.Component {
   constructor(props) {
     super(props);
     let roomName;
+    let userName;
     try {
       roomName = props.props.match.params.roomName || '';
     } catch (error) {
       console.warn('Error while getting Route Param', error);
       roomName = '';
     }
+    try {
+      userName = props.props.match.params.userName || '';
+    } catch (error) {
+      console.warn('Error while getting Route Param', error);
+      userName = '';
+    }
     this.state = {
       roomName,
-      userName: '',
+      userName,
       showAlert: false,
       showAlertMessage: ''
     };
     this.roomNameRegex = new RegExp(/^\w[0-9a-zA-Z-_]{4,22}\w$/);
-    this.userNameRegex = new RegExp(/^\w[0-9a-zA-Z-_ ]{3,34}\w$/);
+    this.userNameRegex = new RegExp(/^\w[0-9a-zA-Z-_ ]{1,34}\w$/);
     this.roomNameMessage = 'Room name should only contain letters, numbers, hyphen(-) & underscore(_) and length should be between 6 to 24.';
     this.userNameMessage = 'User name should only contain letters, numbers, space, hyphen(-) & underscore(_) and length should be between 3 to 36.';
     this.roomNameChange = this.roomNameChange.bind(this);
     this.userNameChange = this.userNameChange.bind(this);
     this.joinRoom = this.joinRoom.bind(this);
     this.handleAlertClose = this.handleAlertClose.bind(this);
+
+    this.joinRoom();
   }
 
   roomNameChange(event) {
