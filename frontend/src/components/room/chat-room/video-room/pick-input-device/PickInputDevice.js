@@ -260,7 +260,7 @@ class PickInputDevice extends React.Component {
               <Refresh onClick={this.initDevices} className={classes.icon} />
             </Grid>
           </Grid>
-          <video className={classes.video} ref={this.videoRef} autoPlay controls={false}></video>
+          <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} playsInline={true} ></video>
           <Grid container justify="center" alignItems="center" spacing={2}>
             <Grid item>
               {/* Video Cam Off */}
