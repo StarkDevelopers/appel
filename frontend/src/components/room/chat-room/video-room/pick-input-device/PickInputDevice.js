@@ -342,7 +342,8 @@ const style = reactTheme => createStyles({
     transform: 'scaleX(-1)',
     width: '80%',
     maxHeight: '20rem',
-    marginBottom: '1rem'
+    marginBottom: '1rem',
+    pointerEvents: 'none'
   },
   greenCallBtn: {
     backgroundColor: '#4caf50'

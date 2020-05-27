@@ -122,17 +122,32 @@ export default (reactTheme) => {
       position: 'relative'
     },
     videoContainer: {
-      height: '100%'
+      height: '100%',
+      position: 'relative'
     },
     videoItem: {
       width: '100%',
       padding: '0.5rem',
       position: 'relative'
     },
+    pictureInPicture: {
+      width: '100%',
+      padding: '0.5rem',
+      position: 'relative',
+      [reactTheme.breakpoints.down('xs')]: {
+        position: 'absolute',
+        bottom: '0.5rem',
+        right: '0.5rem',
+        width: '40%',
+        height: '8rem',
+        zIndex: '100'
+      }
+    },
     video: {
       width: '100%',
       height: '100%',
-      transform: 'scaleX(-1)'
+      transform: 'scaleX(-1)',
+      pointerEvents: 'none'
     },
     videoOverlay: { 
       position: 'absolute',
@@ -143,6 +158,17 @@ export default (reactTheme) => {
       height: 'calc(100% - 1rem)'
     },
     videoUserName: {
+      position: 'absolute',
+      top: '0.5rem',
+      left: '0.5rem',
+      fontSize: '1rem',
+      backgroundColor: '#333333',
+      padding: '0.25rem',
+      [reactTheme.breakpoints.down('xs')]: {
+        display: 'none'
+      }
+    },
+    remoteVideoUserName: {
       position: 'absolute',
       top: '0.5rem',
       left: '0.5rem',

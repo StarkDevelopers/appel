@@ -22,14 +22,14 @@ class VideoRoom extends React.Component {
       fileUploadOpen: false,
       remoteCamOff: false,
       audioDoesNotExist: false,
-      videoDoesNotExist: false
+      videoDoesNotExist: false,
+      remoteVideoStream: new MediaStream()
     };
     // Audio/Video Device ID
     this.audioDeviceId = null;
     this.videoDeviceId = null;
     // Streams
     this.videoStream = new MediaStream();
-    this.remoteVideoStream = new MediaStream();
 
     // Timeout for removing video-audio tracks from local stream
     this.videoCleanUpTimeout = null;
@@ -57,24 +57,27 @@ class VideoRoom extends React.Component {
   componentDidMount() {
     this.timerInterval = setInterval(() => this.time += 1, 1000);
 
-    console.log(this.videoRef.current);
     if ('srcObject' in this.videoRef.current) {
       this.videoRef.current.srcObject = this.videoStream;
-      this.remoteVideoRef.current.srcObject = this.remoteVideoStream;
+      this.remoteVideoRef.current.srcObject = this.state.remoteVideoStream;
     } else {
       this.videoRef.current.src = window.URL.createObjectURL(this.videoStream);
-      this.remoteVideoRef.current.src = window.URL.createObjectURL(this.remoteVideoStream);
+      this.remoteVideoRef.current.src = window.URL.createObjectURL(this.state.remoteVideoStream);
     }
 
     this.props.peerConnection.ontrack = event => {
       console.log('received track');
 
-      this.remoteVideoStream = event.streams[0];
+      const remoteVideoStream = event.streams[0];
       if ('srcObject' in this.remoteVideoRef.current) {
-        this.remoteVideoRef.current.srcObject = event.streams[0];
+        this.remoteVideoRef.current.srcObject = remoteVideoStream;
       } else {
-        this.remoteVideoRef.current.src = window.URL.createObjectURL(event.streams[0]);
+        this.remoteVideoRef.current.src = window.URL.createObjectURL(remoteVideoStream);
       }
+
+      this.setState({
+        remoteVideoStream
+      });
     };
 
     this.props.socket.on('camStatus', off => {
@@ -274,15 +277,28 @@ class VideoRoom extends React.Component {
         {/* Video Container */}
         <Grid item className={classes.videoBox}>
           <Grid container className={classes.videoContainer}>
-            <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} muted={true} playsInline={true} ></video>
+            <Grid item xs={12} md={6} className={this.state.remoteVideoStream.getVideoTracks().length === 0 ? classes.videoItem : classes.pictureInPicture}>
+              <video
+                className={classes.video}
+                ref={this.videoRef}
+                autoPlay={true}
+                controls={false}
+                muted={true}
+                playsInline={true}
+              ></video>
               { (this.state.videoCamOff || this.state.videoDoesNotExist) && <div className={classes.videoOverlay}></div>}
               <Typography className={classes.videoUserName}>{`You(${this.props.userName})`}</Typography>
             </Grid>
             <Grid item xs={12} md={6} className={classes.videoItem}>
-              <video className={classes.video} ref={this.remoteVideoRef} autoPlay={true} controls={false} playsInline={true} ></video>
-              { this.state.remoteCamOff && <div className={classes.videoOverlay}></div>}
-              <Typography className={classes.videoUserName}>{this.props.peerUserName ? this.props.peerUserName.userName : ''}</Typography>
+              <video
+                className={classes.video}
+                ref={this.remoteVideoRef}
+                autoPlay={true}
+                controls={false}
+                playsInline={true}
+              ></video>
+              { (this.state.remoteCamOff || this.state.remoteVideoStream.getVideoTracks().length === 0) && <div className={classes.videoOverlay}></div>}
+              <Typography className={classes.remoteVideoUserName}>{this.props.peerUserName ? this.props.peerUserName.userName : ''}</Typography>
             </Grid>
           </Grid>
           {/* Chat Messages */}
