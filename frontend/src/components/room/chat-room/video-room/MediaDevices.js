@@ -33,6 +33,8 @@ export default async () => {
   }
 
   return {
+    audioDevices,
+    videoDevices,
     audioDoesNotExist,
     videoDoesNotExist,
     stream

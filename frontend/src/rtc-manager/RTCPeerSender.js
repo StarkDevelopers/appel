@@ -115,9 +115,7 @@ export default async function RTCPeerSender(
     peerConnection.onnegotiationneeded = async () => {
       console.log('Negotiation');
       setTimeout(async () => {
-        console.log('TIMEOUT');
         if (peerConnection.signalingState === 'stable') {
-          console.log('PeerReadyToCall');
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
 

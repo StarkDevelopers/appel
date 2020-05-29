@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
 import { Grid, Typography, Modal, Fab, InputBase, IconButton, Snackbar } from '@material-ui/core';
-import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat, GetApp } from '@material-ui/icons';
+import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat, GetApp, Settings } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
@@ -58,6 +58,7 @@ class VideoRoom extends React.Component {
     this.handleFileUpload = this.handleFileUpload.bind(this);
     this.showAlertMediaDevices = this.showAlertMediaDevices.bind(this);
     this.handleAlertClose = this.handleAlertClose.bind(this);
+    this.handleOpenPickUpDevice = this.handleOpenPickUpDevice.bind(this);
   }
 
   componentDidMount() {
@@ -125,7 +126,7 @@ class VideoRoom extends React.Component {
       const {
         stream,
         audioDoesNotExist,
-        videoDoesNotExist,
+        videoDoesNotExist
       } = await MediaDevices();
 
       if (stream) {
@@ -153,7 +154,7 @@ class VideoRoom extends React.Component {
     }
   }
 
-  refershVideoCall(micOff = false, videoCamOff = false, audioDoesNotExist = false, videoDoesNotExist = false) {
+  refershVideoCall(audioDoesNotExist = false, videoDoesNotExist = false) {
     const audioDevice = this.audioDeviceId ? { deviceId: { exact: this.audioDeviceId } } : true;
     const videoDevice = this.videoDeviceId ? { deviceId: { exact: this.videoDeviceId } } : true;
 
@@ -170,11 +171,11 @@ class VideoRoom extends React.Component {
             }
 
             if (track.kind === 'audio') {
-              if (micOff) this.enableMicOff(micOff);
+              if (this.state.micOff) this.enableMicOff(this.state.micOff);
               this.props.peerConnection.addTrack(track, stream);
             }
             if (track.kind === 'video') {
-              if (videoCamOff) this.enableVideoCamOff(videoCamOff);
+              if (this.state.videoCamOff) this.enableVideoCamOff(this.state.videoCamOff);
               this.props.peerConnection.addTrack(track, stream);
             }
           });
@@ -194,28 +195,31 @@ class VideoRoom extends React.Component {
     });
   }
 
-  handleClosePickInputDevice(audioDevice, videoDevice, videoCamOff, micOff, audioDoesNotExist, videoDoesNotExist) {
-    if (audioDevice === undefined && videoDevice === undefined && videoCamOff === undefined && micOff === undefined) {
-      micOff = this.state.micOff;
-      videoCamOff = this.state.videoCamOff;
-      this.setState({
-        openPickInputDevice: false
-      });
-    } else {
+  handleOpenPickUpDevice() {
+    this.setState({
+      openPickInputDevice: true
+    });
+  }
+
+  handleClosePickInputDevice(saved, audioDevice, videoDevice, audioDoesNotExist, videoDoesNotExist) {
+    if (saved) {
+      this.cleanVideoStream();
       this.audioDeviceId = audioDevice;
       this.videoDeviceId = videoDevice;
       this.setState({
         openPickInputDevice: false,
-        videoCamOff,
-        micOff,
         audioDoesNotExist,
         videoDoesNotExist
+      });
+      this.refershVideoCall(audioDoesNotExist, videoDoesNotExist);
+    } else {
+      this.setState({
+        openPickInputDevice: false
       });
     }
     if (videoDoesNotExist) {
       this.props.socket.emit('camStatus', true);
     }
-    this.refershVideoCall(micOff, videoCamOff, audioDoesNotExist, videoDoesNotExist);
   }
 
   enableVideoCamOff(off) {
@@ -463,6 +467,11 @@ class VideoRoom extends React.Component {
             <Grid item>
               <Fab className={classes.videoAction} color={this.state.fileUploadOpen ? 'primary' : ''} aria-label="file-upload" onClick={this.handleFileUpload}>
                 <AttachFile />
+              </Fab>
+            </Grid>
+            <Grid item>
+              <Fab className={classes.videoAction} aria-label="pickup-device" onClick={this.handleOpenPickUpDevice}>
+                <Settings />
               </Fab>
             </Grid>
             <Grid item>

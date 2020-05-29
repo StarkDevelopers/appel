@@ -2,7 +2,9 @@ import React from 'react';
 import { Grid, FormControl, InputLabel, Select, MenuItem, Typography, Fab, Snackbar } from '@material-ui/core';
 import { createStyles, withStyles, createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { connect } from 'react-redux';
-import { Clear, Refresh, Call, Videocam, VideocamOff, Mic, MicOff } from '@material-ui/icons';
+import { Clear, Refresh, Update } from '@material-ui/icons';
+
+import MediaDevices from '../MediaDevices';
 
 class PickInputDevice extends React.Component {
   constructor(props) {
@@ -13,8 +15,6 @@ class PickInputDevice extends React.Component {
       videoDevice: '',
       audioDevices: [],
       videoDevices: [],
-      videoCamOff: false,
-      micOff: false,
       audioDoesNotExist: false,
       videoDoesNotExist: false,
       showAlert: false,
@@ -26,98 +26,57 @@ class PickInputDevice extends React.Component {
     this.handleVideoInputChange = this.handleVideoInputChange.bind(this);
     this.handleAudioInputChange = this.handleAudioInputChange.bind(this);
     this.refreshStream = this.refreshStream.bind(this);
-    this.handleVideoCamOff = this.handleVideoCamOff.bind(this);
-    this.handleMicOff = this.handleMicOff.bind(this);
     this.makeCall = this.makeCall.bind(this);
+    this.showAlertMediaDevices = this.showAlertMediaDevices.bind(this);
     this.handleAlertClose = this.handleAlertClose.bind(this);
   }
 
-  initDevices() {
-    navigator.mediaDevices.enumerateDevices()
-      .then(devices => {
-        const audioDevices = devices.filter(d => d.kind === 'audioinput');
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+  async initDevices() {
+    try {
+      const {
+        audioDevices,
+        videoDevices,
+        stream,
+        audioDoesNotExist,
+        videoDoesNotExist
+      } = await MediaDevices();
 
-        let audioDoesNotExist = false;
-        let videoDoesNotExist = false;
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
 
-        if (audioDevices.length === 0 && videoDevices.length === 0) {
-          audioDoesNotExist = true;
-          videoDoesNotExist = true;
-          this.setState({
-            showAlert: true,
-            showAlertMessage: 'Video Cam and Mic do not exist'
-          });
-        } else if (audioDevices.length === 0) {
-          audioDoesNotExist = true;
-          videoDoesNotExist = false;
-          this.setState({
-            showAlert: true,
-            showAlertMessage: 'Mic does not exist'
-          });
-        } else if (videoDevices.length === 0) {
-          audioDoesNotExist = false;
-          videoDoesNotExist = true;
-          this.setState({
-            showAlert: true,
-            showAlertMessage: 'Video Cam does not exist'
-          });
+        if (audioDevices.concat(videoDevices).findIndex(d => !d.label) > -1) {
+          return this.initDevices();
         }
+      }
 
-        if (!audioDoesNotExist || !videoDoesNotExist) {
-          // Permission to access
-          navigator.mediaDevices.getUserMedia({ audio: !audioDoesNotExist, video: !videoDoesNotExist })
-            .then(stream => {
-              stream.getTracks().forEach(t => t.stop());
+      // Reset Audio-Video devices if they are in use and they are not available anymore
+      let audioDevice = audioDevices.find(d => d.deviceId === this.state.audioDevice);
+      audioDevice = audioDevice ? audioDevice.deviceId : '';
+      let videoDevice = videoDevices.find(d => d.deviceId === this.state.videoDevice);
+      videoDevice = videoDevice ? videoDevice.deviceId : '';
 
-              if (devices.find(d => !d.label)) {
-                return this.initDevices();
-              }
+      if (!audioDevice || !videoDevice) {
+        const audioDeviceToUse = audioDevice ? { deviceId: { exact: audioDevice } } : true;
+        const videoDeviceToUse = videoDevice ? { deviceId: { exact: videoDevice } } : true;
+        this.refreshStream(audioDeviceToUse, videoDeviceToUse, audioDoesNotExist, videoDoesNotExist);
+      }
 
-              // Reset Audio-Video devices if they are in use and they are not available anymore
-              let audioDevice = devices.find(d => d.deviceId === this.state.audioDevice);
-              audioDevice = audioDevice ? audioDevice.deviceId : '';
-              let videoDevice = devices.find(d => d.deviceId === this.state.videoDevice);
-              videoDevice = videoDevice ? videoDevice.deviceId : '';
-
-              if (!audioDevice || !videoDevice) {
-                const audioDeviceToUse = audioDevice ? { deviceId: { exact: audioDevice } } : true;
-                const videoDeviceToUse = videoDevice ? { deviceId: { exact: videoDevice } } : true;
-                this.refreshStream(audioDeviceToUse, videoDeviceToUse, audioDoesNotExist, videoDoesNotExist);
-              }
-
-              this.setState({
-                audioDevice,
-                videoDevice,
-                audioDevices,
-                videoDevices,
-                audioDoesNotExist,
-                videoDoesNotExist
-              });
-            })
-            .catch(error => {
-              console.error(error);
-              this.setState({
-                showAlert: true,
-                showAlertMessage: 'Error while accessing Video Cam/Mic.'
-              });
-            });
-        } else {
-          this.setState({
-            audioDevices,
-            videoDevices,
-            audioDoesNotExist,
-            videoDoesNotExist
-          });
-        }
-      })
-      .catch(error => {
-        console.error(error);
-        this.setState({
-          showAlert: true,
-          showAlertMessage: 'Error while getting Video Cam/Mic.'
-        });
+      this.showAlertMediaDevices(audioDoesNotExist, videoDoesNotExist);
+      this.setState({
+        audioDevice,
+        videoDevice,
+        audioDevices,
+        videoDevices,
+        audioDoesNotExist,
+        videoDoesNotExist
       });
+    } catch (error) {
+      console.log(error);
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Error while getting devices. Try again later.'
+      });
+    }
   }
 
   componentDidMount() {
@@ -175,24 +134,30 @@ class PickInputDevice extends React.Component {
     }
   }
 
-  handleVideoCamOff(off = true) {
-    this.setState({
-      videoCamOff: off
-    });
-  }
-
-  handleMicOff(off = true) {
-    this.setState({
-      micOff: off
-    });
+  showAlertMediaDevices(audioDoesNotExist, videoDoesNotExist) {
+    if (audioDoesNotExist && videoDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Video Cam and Mic do not exist'
+      });
+    } else if (audioDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Mic does not exist'
+      });
+    } else if (videoDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Video Cam does not exist'
+      });
+    }
   }
 
   makeCall() {
     this.props.onClose(
+      true,
       this.state.audioDevice,
       this.state.videoDevice,
-      this.state.videoCamOff,
-      this.state.micOff,
       this.state.audioDoesNotExist,
       this.state.videoDoesNotExist
     );
@@ -215,7 +180,7 @@ class PickInputDevice extends React.Component {
               <Typography>Select Input Devices</Typography>
             </Grid>
             <Grid item>
-              <Clear onClick={this.props.onClose} className={classes.icon} />
+              <Clear onClick={() => this.props.onClose(false)} className={classes.icon} />
             </Grid>
           </Grid>
           <Grid container justify="center" alignItems="center" className={classes.selectContainer}>
@@ -263,30 +228,8 @@ class PickInputDevice extends React.Component {
           <video className={classes.video} ref={this.videoRef} autoPlay={true} controls={false} playsInline={true} ></video>
           <Grid container justify="center" alignItems="center" spacing={2}>
             <Grid item>
-              {/* Video Cam Off */}
-              { this.state.videoCamOff && <Fab color="secondary" aria-label="videoCamOff" disabled={this.state.videoDoesNotExist} onClick={() => this.handleVideoCamOff(false)}>
-                <VideocamOff />
-              </Fab> }
-
-              {/* Video Cam On */}
-              { !this.state.videoCamOff && <Fab aria-label="videoCamOn" disabled={this.state.videoDoesNotExist} onClick={() => this.handleVideoCamOff(true)}>
-                <Videocam />
-              </Fab> }
-            </Grid>
-            <Grid item>
-              {/* Mic Off */}
-              { this.state.micOff && <Fab color="secondary" aria-label="micOff" disabled={this.state.audioDoesNotExist} onClick={() => this.handleMicOff(false)}>
-                <MicOff />
-              </Fab> }
-
-              {/* Mic On */}
-              { !this.state.micOff && <Fab aria-label="micOn" disabled={this.state.audioDoesNotExist} onClick={() => this.handleMicOff(true)}>
-                <Mic />
-              </Fab> }
-            </Grid>
-            <Grid item>
               <Fab aria-label="call" onClick={this.makeCall} className={classes.greenCallBtn}>
-                <Call />
+                <Update />
               </Fab>
             </Grid>
           </Grid>
