@@ -54,14 +54,14 @@ class JoinRoom extends React.Component {
   joinRoom() {
     const { roomName, userName } = this.state;
     if (!this.roomNameRegex.test(roomName)) {
-      this.setState({
+      roomName && this.setState({
         showAlert: true,
         showAlertMessage: this.roomNameMessage
       });
       return;
     }
     if (!this.userNameRegex.test(userName)) {
-      this.setState({
+      userName && this.setState({
         showAlert: true,
         showAlertMessage: this.userNameMessage
       });

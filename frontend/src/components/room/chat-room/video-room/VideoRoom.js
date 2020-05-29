@@ -1,12 +1,13 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
-import { Grid, Typography, Modal, Fab, InputBase, IconButton } from '@material-ui/core';
+import { Grid, Typography, Modal, Fab, InputBase, IconButton, Snackbar } from '@material-ui/core';
 import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat, GetApp } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
 import PickInputDevice from './pick-input-device/PickInputDevice';
 import FileUpload from '../file-upload/FileUpload';
+import MediaDevices from './MediaDevices';
 
 class VideoRoom extends React.Component {
   constructor(props) {
@@ -14,7 +15,7 @@ class VideoRoom extends React.Component {
     this.videoRef = React.createRef();
     this.remoteVideoRef = React.createRef();
     this.state = {
-      openPickInputDevice: true,
+      openPickInputDevice: false,
       videoCamOff: false,
       micOff: false,
       message: '',
@@ -23,7 +24,9 @@ class VideoRoom extends React.Component {
       remoteCamOff: false,
       audioDoesNotExist: false,
       videoDoesNotExist: false,
-      remoteVideoStream: new MediaStream()
+      remoteVideoStream: new MediaStream(),
+      showAlert: false,
+      showAlertMessage: ''
     };
     // Audio/Video Device ID
     this.audioDeviceId = null;
@@ -43,6 +46,7 @@ class VideoRoom extends React.Component {
     this.cleanVideoStream = this.cleanVideoStream.bind(this);
     this.handleClosePickInputDevice = this.handleClosePickInputDevice.bind(this);
     this.initVideoCall = this.initVideoCall.bind(this);
+    this.refershVideoCall = this.refershVideoCall.bind(this);
     this.handleVideoCamOff = this.handleVideoCamOff.bind(this);
     this.enableVideoCamOff = this.enableVideoCamOff.bind(this);
     this.handleMicOff = this.handleMicOff.bind(this);
@@ -52,6 +56,8 @@ class VideoRoom extends React.Component {
     this.handleSendMessage = this.handleSendMessage.bind(this);
     this.openChat = this.openChat.bind(this);
     this.handleFileUpload = this.handleFileUpload.bind(this);
+    this.showAlertMediaDevices = this.showAlertMediaDevices.bind(this);
+    this.handleAlertClose = this.handleAlertClose.bind(this);
   }
 
   componentDidMount() {
@@ -66,8 +72,6 @@ class VideoRoom extends React.Component {
     }
 
     this.props.peerConnection.ontrack = event => {
-      console.log('received track');
-
       const remoteVideoStream = event.streams[0];
       if ('srcObject' in this.remoteVideoRef.current) {
         this.remoteVideoRef.current.srcObject = remoteVideoStream;
@@ -95,6 +99,8 @@ class VideoRoom extends React.Component {
     }
 
     this.props.socket.on('disconnected', this.disconnectedListener);
+
+    this.initVideoCall();
   }
 
   componentWillUnmount() {
@@ -114,7 +120,40 @@ class VideoRoom extends React.Component {
     clearInterval(this.timerInterval);
   }
 
-  initVideoCall(micOff = false, videoCamOff = false, audioDoesNotExist = false, videoDoesNotExist = false) {
+  async initVideoCall() {
+    try {
+      const {
+        stream,
+        audioDoesNotExist,
+        videoDoesNotExist,
+      } = await MediaDevices();
+
+      if (stream) {
+        this.videoStream = stream;
+        stream.getTracks().forEach(track => {
+          if ('srcObject' in this.videoRef.current) {
+            this.videoRef.current.srcObject = stream;
+          } else {
+            this.videoRef.current.src = window.URL.createObjectURL(stream);
+          }
+
+          this.props.peerConnection.addTrack(track, stream);
+        });
+      }
+      this.showAlertMediaDevices(audioDoesNotExist, videoDoesNotExist);
+      this.setState({
+        audioDoesNotExist,
+        videoDoesNotExist
+      });
+    } catch (error) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Error while getting devices. Try again later.'
+      });
+    }
+  }
+
+  refershVideoCall(micOff = false, videoCamOff = false, audioDoesNotExist = false, videoDoesNotExist = false) {
     const audioDevice = this.audioDeviceId ? { deviceId: { exact: this.audioDeviceId } } : true;
     const videoDevice = this.videoDeviceId ? { deviceId: { exact: this.videoDeviceId } } : true;
 
@@ -176,7 +215,7 @@ class VideoRoom extends React.Component {
     if (videoDoesNotExist) {
       this.props.socket.emit('camStatus', true);
     }
-    this.initVideoCall(micOff, videoCamOff, audioDoesNotExist, videoDoesNotExist);
+    this.refershVideoCall(micOff, videoCamOff, audioDoesNotExist, videoDoesNotExist);
   }
 
   enableVideoCamOff(off) {
@@ -258,6 +297,32 @@ class VideoRoom extends React.Component {
     const fileUploadOpen = !this.state.fileUploadOpen;
     this.setState({
       fileUploadOpen
+    });
+  }
+
+  showAlertMediaDevices(audioDoesNotExist, videoDoesNotExist) {
+    if (audioDoesNotExist && videoDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Video Cam and Mic do not exist'
+      });
+    } else if (audioDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Mic does not exist'
+      });
+    } else if (videoDoesNotExist) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Video Cam does not exist'
+      });
+    }
+  }
+
+  handleAlertClose() {
+    this.setState({
+      showAlert: false,
+      showAlertMessage: ''
     });
   }
 
@@ -421,6 +486,13 @@ class VideoRoom extends React.Component {
         >
           <FileUpload onClose={this.handleFileUpload} onUploaded={this.props.onUploaded} />
         </Modal>
+        <Snackbar
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          key={`top,center`}
+          open={this.state.showAlert}
+          onClose={this.handleAlertClose}
+          message={this.state.showAlertMessage}
+        />
       </Grid>
     );
   }

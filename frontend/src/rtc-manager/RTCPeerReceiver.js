@@ -112,10 +112,15 @@ export default async function RTCPeerReceiver(
 
   if (!peerConnection.onnegotiationneeded) {
     peerConnection.onnegotiationneeded = async () => {
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
+      console.log('Negotiation');
+      setTimeout(async () => {
+        if (peerConnection.signalingState === 'stable') {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
 
-      socket.emit('joined-room', { offer, userName });
+          socket.emit('joined-room', { offer, userName });
+        }
+      }, 500);
     };
   }
 
