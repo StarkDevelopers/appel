@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "frontend": "rimraf client && cd ../frontend && npm run build && cd build && copyfiles \"./**/*\" ../../backend/client && cd ../../backend",
-    "start": "npm run frontend && node server.js",
+    "start": "npm run frontend && env NODE_ENV=PRODUCTION pm2 start server.js",
     "lint": "eslint ."
   },
   "dependencies": {

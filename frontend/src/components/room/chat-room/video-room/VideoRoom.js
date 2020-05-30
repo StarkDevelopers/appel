@@ -1,12 +1,13 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
 import { Grid, Typography, Modal, Fab, InputBase, IconButton, Snackbar } from '@material-ui/core';
+import { SpeedDial, SpeedDialAction, SpeedDialIcon } from '@material-ui/lab';
 import { FiberManualRecord, VideocamOff, Videocam, Mic, MicOff, CallEnd, AttachFile, Send, Chat, GetApp, Settings } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
 import PickInputDevice from './pick-input-device/PickInputDevice';
-import FileUpload from '../file-upload/FileUpload';
+import FileUploadPicker from '../file-upload/FileUploadPicker';
 import MediaDevices from './MediaDevices';
 
 class VideoRoom extends React.Component {
@@ -26,7 +27,8 @@ class VideoRoom extends React.Component {
       videoDoesNotExist: false,
       remoteVideoStream: new MediaStream(),
       showAlert: false,
-      showAlertMessage: ''
+      showAlertMessage: '',
+      videoActionOpen: false
     };
     // Audio/Video Device ID
     this.audioDeviceId = null;
@@ -59,6 +61,14 @@ class VideoRoom extends React.Component {
     this.showAlertMediaDevices = this.showAlertMediaDevices.bind(this);
     this.handleAlertClose = this.handleAlertClose.bind(this);
     this.handleOpenPickUpDevice = this.handleOpenPickUpDevice.bind(this);
+    this.handleVideoActionOpen = this.handleVideoActionOpen.bind(this);
+    this.onFileUploadError = this.onFileUploadError.bind(this);
+
+    this.actions = [
+      { name: 'Chat', icon: <Chat />, method: this.openChat },
+      { name: 'Attach File', icon: <AttachFile />, method: this.handleFileUpload },
+      { name: 'Change Input Device', icon: <Settings />, method: this.handleOpenPickUpDevice }
+    ];
   }
 
   componentDidMount() {
@@ -304,6 +314,13 @@ class VideoRoom extends React.Component {
     });
   }
 
+  onFileUploadError() {
+    this.setState({
+      showAlert: true,
+      showAlertMessage: 'File upload failed. Please try again later.'
+    });
+  }
+
   showAlertMediaDevices(audioDoesNotExist, videoDoesNotExist) {
     if (audioDoesNotExist && videoDoesNotExist) {
       this.setState({
@@ -327,6 +344,12 @@ class VideoRoom extends React.Component {
     this.setState({
       showAlert: false,
       showAlertMessage: ''
+    });
+  }
+
+  handleVideoActionOpen(open) {
+    this.setState({
+      videoActionOpen: open
     });
   }
 
@@ -460,20 +483,27 @@ class VideoRoom extends React.Component {
               </Fab> }
             </Grid>
             <Grid item>
-              <Fab className={classes.videoAction} color={this.state.chatOpened ? 'primary' : ''} aria-label="chat" onClick={this.openChat}>
-                <Chat />
-              </Fab>
+              <SpeedDial
+                ariaLabel="VideoActions"
+                className={classes.speedDial}
+                icon={<SpeedDialIcon />}
+                onClose={() => this.handleVideoActionOpen(false)}
+                onOpen={() => this.handleVideoActionOpen(true)}
+                open={this.state.videoActionOpen}
+                direction="up"
+              >
+                {this.actions.map(action => (
+                  <SpeedDialAction
+                    className={action.name === 'Chat' && this.state.chatOpened ? classes.activeSpeedDial : ''}
+                    key={action.name}
+                    icon={action.icon}
+                    tooltipTitle={action.name}
+                    onClick={action.method}
+                  />
+                ))}
+              </SpeedDial>
             </Grid>
-            <Grid item>
-              <Fab className={classes.videoAction} color={this.state.fileUploadOpen ? 'primary' : ''} aria-label="file-upload" onClick={this.handleFileUpload}>
-                <AttachFile />
-              </Fab>
-            </Grid>
-            <Grid item>
-              <Fab className={classes.videoAction} aria-label="pickup-device" onClick={this.handleOpenPickUpDevice}>
-                <Settings />
-              </Fab>
-            </Grid>
+
             <Grid item>
               <Fab className={classes.videoAction} color="secondary" aria-label="callEnd" onClick={() => this.disconnectedCall()}>
                 <CallEnd />
@@ -493,7 +523,7 @@ class VideoRoom extends React.Component {
           aria-labelledby="File Upload"
           aria-describedby="File Upload"
         >
-          <FileUpload onClose={this.handleFileUpload} onUploaded={this.props.onUploaded} />
+          <FileUploadPicker onClose={this.handleFileUpload} onUploaded={this.props.onUploaded} onFileUploadError={this.onFileUploadError} />
         </Modal>
         <Snackbar
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}

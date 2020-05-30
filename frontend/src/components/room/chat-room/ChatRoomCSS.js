@@ -113,6 +113,23 @@ export default (reactTheme) => {
       height: '3rem',
       margin: '0 1rem'
     },
+    speedDial: {
+      '& #VideoActions-actions': {
+        position: 'absolute'
+      },
+      '& .MuiSpeedDial-fab': {
+        width: '3rem',
+        height: '3rem',
+        margin: '0 1rem'
+      }
+    },
+    activeSpeedDial: {
+      backgroundColor: '#3f51b5',
+      color: '#FFFFFF',
+      '&:hover': {
+        backgroundColor: '#1976d2'
+      }
+    },
     videoBox: {
       backgroundColor: '#999999',
       flex: '1 1 auto',

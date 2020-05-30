@@ -1,22 +1,26 @@
 import React from 'react';
 import { createStyles, withStyles } from '@material-ui/core/styles';
-import { Grid, InputBase, Typography, IconButton, Modal } from '@material-ui/core';
+import { Grid, InputBase, Typography, IconButton, Modal, Snackbar } from '@material-ui/core';
 import { Send, AttachFile, VideoCall, FiberManualRecord, GetApp } from '@material-ui/icons';
 import { connect } from 'react-redux';
 
 import ChatRoomCSS from '../ChatRoomCSS';
-import FileUpload from '../file-upload/FileUpload';
+import FileUploadPicker from '../file-upload/FileUploadPicker';
 
 class MessageRoom extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       message: '',
-      fileUploadOpen: false
+      fileUploadOpen: false,
+      showAlert: false,
+      showAlertMessage: ''
     };
     this.handleMessage = this.handleMessage.bind(this);
     this.handleSendMessage = this.handleSendMessage.bind(this);
     this.handleOpenFileUpload = this.handleOpenFileUpload.bind(this);
+    this.onFileUploadError = this.onFileUploadError.bind(this);
+    this.handleAlertClose = this.handleAlertClose.bind(this);
   }
 
   handleMessage(event) {
@@ -41,6 +45,20 @@ class MessageRoom extends React.Component {
     const fileUploadOpen = !this.state.fileUploadOpen;
     this.setState({
       fileUploadOpen
+    });
+  }
+
+  onFileUploadError() {
+    this.setState({
+      showAlert: true,
+      showAlertMessage: 'File upload failed. Please try again later.'
+    });
+  }
+
+  handleAlertClose() {
+    this.setState({
+      showAlert: false,
+      showAlertMessage: ''
     });
   }
 
@@ -138,8 +156,15 @@ class MessageRoom extends React.Component {
           aria-labelledby="File Upload"
           aria-describedby="File Upload"
         >
-          <FileUpload onClose={this.handleOpenFileUpload} onUploaded={this.props.onUploaded} />
+          <FileUploadPicker onClose={this.handleOpenFileUpload} onUploaded={this.props.onUploaded} onFileUploadError={this.onFileUploadError} />
         </Modal>
+        <Snackbar
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          key={`top,center`}
+          open={this.state.showAlert}
+          onClose={this.handleAlertClose}
+          message={this.state.showAlertMessage}
+        />
       </Grid>
     );
   }
