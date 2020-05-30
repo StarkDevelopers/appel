@@ -9,6 +9,7 @@ import ChatRoomCSS from '../ChatRoomCSS';
 import PickInputDevice from './pick-input-device/PickInputDevice';
 import FileUploadPicker from '../file-upload/FileUploadPicker';
 import MediaDevices from './MediaDevices';
+import VideoConstraints from './VideoConstraints';
 
 class VideoRoom extends React.Component {
   constructor(props) {
@@ -166,7 +167,7 @@ class VideoRoom extends React.Component {
 
   refershVideoCall(audioDoesNotExist = false, videoDoesNotExist = false) {
     const audioDevice = this.audioDeviceId ? { deviceId: { exact: this.audioDeviceId } } : true;
-    const videoDevice = this.videoDeviceId ? { deviceId: { exact: this.videoDeviceId } } : true;
+    const videoDevice = this.videoDeviceId ? Object.assign({}, VideoConstraints, { deviceId: { exact: this.videoDeviceId } }) : VideoConstraints;
 
     if (!audioDoesNotExist || !videoDoesNotExist) {
       navigator.mediaDevices.getUserMedia({ audio: !audioDoesNotExist ? audioDevice : false, video: !videoDoesNotExist ? videoDevice : false })

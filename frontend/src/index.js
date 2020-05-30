@@ -7,6 +7,7 @@ import * as serviceWorker from './serviceWorker';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
+import adapter from 'webrtc-adapter';
 
 const THEME = createMuiTheme({
   typography: {

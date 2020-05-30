@@ -5,6 +5,7 @@ import { connect } from 'react-redux';
 import { Clear, Refresh, Update } from '@material-ui/icons';
 
 import MediaDevices from '../MediaDevices';
+import VideoConstraints from '../VideoConstraints';
 
 class PickInputDevice extends React.Component {
   constructor(props) {
@@ -56,7 +57,7 @@ class PickInputDevice extends React.Component {
       videoDevice = videoDevice ? videoDevice.deviceId : '';
 
       if (!audioDevice || !videoDevice) {
-        const audioDeviceToUse = audioDevice ? { deviceId: { exact: audioDevice } } : true;
+        const audioDeviceToUse = audioDevice ? Object.assign({}, VideoConstraints, { deviceId: { exact: audioDevice } }) : VideoConstraints;
         const videoDeviceToUse = videoDevice ? { deviceId: { exact: videoDevice } } : true;
         this.refreshStream(audioDeviceToUse, videoDeviceToUse, audioDoesNotExist, videoDoesNotExist);
       }
@@ -116,7 +117,7 @@ class PickInputDevice extends React.Component {
     });
     if (e.target.value) {
       const audioDevice = this.state.audioDevice ? { deviceId: { exact: this.state.audioDevice } } : true;
-      const videoDevice = { deviceId: { exact: e.target.value } };
+      const videoDevice = Object.assign({}, VideoConstraints, { deviceId: { exact: e.target.value } });
 
       this.refreshStream(audioDevice, videoDevice, this.state.audioDoesNotExist, this.state.videoDoesNotExist);
     }
@@ -127,7 +128,7 @@ class PickInputDevice extends React.Component {
       audioDevice: e.target.value
     });
     if (e.target.value) {
-      const videoDevice = this.state.videoDevice ? { deviceId: { exact: this.state.videoDevice } } : true;
+      const videoDevice = this.state.videoDevice ? Object.assign({}, VideoConstraints, { deviceId: { exact: e.target.value } }) : VideoConstraints;
       const audioDevice = { deviceId: { exact: e.target.value } };
 
       this.refreshStream(audioDevice, videoDevice, this.state.audioDoesNotExist, this.state.videoDoesNotExist);
