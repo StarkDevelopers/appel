@@ -113,14 +113,16 @@ export default async function RTCPeerReceiver(
   if (!peerConnection.onnegotiationneeded) {
     peerConnection.onnegotiationneeded = async () => {
       console.log('Negotiation');
+      // Kept different Timeouts(400-1000) so both the device won't fire negotiation at the same time.
       setTimeout(async () => {
         if (peerConnection.signalingState === 'stable') {
+          console.log('Negotiation started');
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
 
           socket.emit('joined-room', { offer, userName });
         }
-      }, 500);
+      }, 400);
     };
   }
 
