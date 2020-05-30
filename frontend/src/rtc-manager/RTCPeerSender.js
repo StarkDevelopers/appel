@@ -114,7 +114,7 @@ export default async function RTCPeerSender(
 
     peerConnection.onnegotiationneeded = async () => {
       console.log('Negotiation');
-      // Kept different Timeouts(400-800) so both the device won't fire negotiation at the same time.
+      // Kept different Timeouts(400-1000) so both the device won't fire negotiation at the same time.
       setTimeout(async () => {
         if (peerConnection.signalingState === 'stable') {
           console.log('Negotiation started');
