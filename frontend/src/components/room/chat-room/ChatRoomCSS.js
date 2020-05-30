@@ -115,7 +115,8 @@ export default (reactTheme) => {
     },
     speedDial: {
       '& #VideoActions-actions': {
-        position: 'absolute'
+        position: 'absolute',
+        zIndex: '150'
       },
       '& .MuiSpeedDial-fab': {
         width: '3rem',
