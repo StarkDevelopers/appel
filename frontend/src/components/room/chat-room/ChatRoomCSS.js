@@ -225,7 +225,8 @@ export default (reactTheme) => {
       bottom: '0',
       backgroundColor: '#333333',
       height: '3rem',
-      width: '100%'
+      width: '100%',
+      zIndex: 125,
     },
     fileContainer: {
       color: '#999999',
