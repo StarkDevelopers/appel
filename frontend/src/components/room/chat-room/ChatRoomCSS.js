@@ -145,14 +145,18 @@ export default (reactTheme) => {
     },
     videoItem: {
       width: '100%',
+      height: '100%',
+      maxHeight: '100%',
       padding: '0.5rem',
       position: 'relative'
     },
     pictureInPicture: {
       width: '100%',
+      height: '100%',
+      maxHeight: '100%',
       padding: '0.5rem',
       position: 'relative',
-      [reactTheme.breakpoints.down('xs')]: {
+      [reactTheme.breakpoints.down('sm')]: {
         position: 'absolute',
         bottom: '0.5rem',
         right: '0.5rem',
