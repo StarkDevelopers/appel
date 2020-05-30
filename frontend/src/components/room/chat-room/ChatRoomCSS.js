@@ -217,7 +217,8 @@ export default (reactTheme) => {
       backgroundColor: 'rgba(153, 153, 153, 0.6)',
       overflowY: 'auto',
       height: '33%',
-      width: '100%'
+      width: '100%',
+      zIndex: 125
     },
     videoMessageInputBox: {
       position: 'absolute',

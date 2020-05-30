@@ -207,7 +207,8 @@ class VideoRoom extends React.Component {
 
   handleOpenPickUpDevice() {
     this.setState({
-      openPickInputDevice: true
+      openPickInputDevice: true,
+      videoActionOpen: false
     });
   }
 
@@ -303,14 +304,16 @@ class VideoRoom extends React.Component {
   openChat() {
     const isOpened = this.state.chatOpened;
     this.setState({
-      chatOpened: !isOpened
+      chatOpened: !isOpened,
+      videoActionOpen: false
     });
   }
 
   handleFileUpload() {
     const fileUploadOpen = !this.state.fileUploadOpen;
     this.setState({
-      fileUploadOpen
+      fileUploadOpen,
+      videoActionOpen: false
     });
   }
 
