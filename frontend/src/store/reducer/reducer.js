@@ -9,7 +9,8 @@ const initialState = {
   audioDeviceId: '',
   videoDeviceId: '',
   videoCamOff: false,
-  micOff: false
+  micOff: false,
+  roomFull: false
 };
 
 export const reducer = (state = initialState, action) => {
@@ -132,6 +133,21 @@ export const reducer = (state = initialState, action) => {
       return {
         ...state,
         messages
+      }
+    }
+    case 'ROOM_FULL': {
+      return {
+        ...state,
+        joinedRoom: false,
+        roomName: null,
+        userName: null,
+        roomFull: true
+      }
+    }
+    case 'ROOM_FULL_UNSET': {
+      return {
+        ...state,
+        roomFull: false
       }
     }
     default:

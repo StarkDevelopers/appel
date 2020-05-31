@@ -35,6 +35,7 @@ class ChatRoom extends React.Component {
     this.peerConnection = null;
     this.dataChannel = null;
     this.isPeerJoined = false;
+    this.roomFull = false;
 
     this.addDataChannel = this.addDataChannel.bind(this);
     this.peerJoined = this.peerJoined.bind(this);
@@ -53,43 +54,62 @@ class ChatRoom extends React.Component {
   }
 
   initRoom(data) {
+    if (data.full) {
+      console.log('Room is full');
+      this.roomFull = true;
+      this.props.roomFull();
+      return;
+    }
     this.socket = io(`/${this.props.roomName}`);
-    this.socket.on('connect', async () => {
-      console.log('connected ', this.socket.id);
+    this.socket.on('roomFull', () => {
+      this.roomFull = true;
+      this.props.roomFull();
+    });
 
-      if (data.available) {
-        this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
-
-        this.dataChannel = await RTCPeerReceiver(this.peerConnection, this.socket, this.props.roomName, this.props.userName, {
-          receivedMessage: this.receivedMessage,
-          addPeerUserName: this.props.addPeerUserName,
-          peerJoined: this.peerJoined,
-          peerLeft: this.peerLeft,
-          incomingCall: this.incomingCall,
-          cancelledCall: this.cancelledCall,
-          rejectedCall: this.rejectedCall,
-          pickedUpCall: this.pickedUpCall,
-          disconnectedCall: this.disconnectedCall
-        });
-      }
-      this.socket.on('joined-room', async ({ offer, user }) => {
-        const isNegotiation = !!this.peerConnection;
-        if (!isNegotiation) {
-          this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
+    this.socket.on('connect', () => {
+      setTimeout(async () => {
+        if (this.roomFull) {
+          console.log('Room is full');
+          this.socket.disconnect();
+          return;
         }
 
-        await RTCPeerSender(this.peerConnection, this.socket, { offer, user }, this.props.userName, {
-          receivedMessage: this.receivedMessage,
-          addPeerUserName: this.props.addPeerUserName,
-          peerJoined: this.peerJoined,
-          addDataChannel: this.addDataChannel,
-          peerLeft: this.peerLeft,
-          incomingCall: this.incomingCall,
-          cancelledCall: this.cancelledCall,
-          rejectedCall: this.rejectedCall,
-          pickedUpCall: this.pickedUpCall,
-          disconnectedCall: this.disconnectedCall
-        }, isNegotiation);
+        console.log('connected ', this.socket.id);
+  
+        if (data.available) {
+          this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
+  
+          this.dataChannel = await RTCPeerReceiver(this.peerConnection, this.socket, this.props.roomName, this.props.userName, {
+            receivedMessage: this.receivedMessage,
+            addPeerUserName: this.props.addPeerUserName,
+            peerJoined: this.peerJoined,
+            peerLeft: this.peerLeft,
+            incomingCall: this.incomingCall,
+            cancelledCall: this.cancelledCall,
+            rejectedCall: this.rejectedCall,
+            pickedUpCall: this.pickedUpCall,
+            disconnectedCall: this.disconnectedCall
+          });
+        }
+        this.socket.on('joined-room', async ({ offer, user }) => {
+          const isNegotiation = !!this.peerConnection;
+          if (!isNegotiation) {
+            this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
+          }
+  
+          await RTCPeerSender(this.peerConnection, this.socket, { offer, user }, this.props.userName, {
+            receivedMessage: this.receivedMessage,
+            addPeerUserName: this.props.addPeerUserName,
+            peerJoined: this.peerJoined,
+            addDataChannel: this.addDataChannel,
+            peerLeft: this.peerLeft,
+            incomingCall: this.incomingCall,
+            cancelledCall: this.cancelledCall,
+            rejectedCall: this.rejectedCall,
+            pickedUpCall: this.pickedUpCall,
+            disconnectedCall: this.disconnectedCall
+          }, isNegotiation);
+        });
       });
     });
   }
@@ -292,7 +312,8 @@ const mapDispatchToProps = dispatch => {
     addMessage: message => dispatch({ type: 'ADD_MESSAGE', message }),
     joinVideoCall: (join = true) => dispatch({ type: 'JOIN_VIDEO_CALL', join }),
     disconnectedCall: message => dispatch({ type: 'DISCONNECT_CALL', message }),
-    fileUploaded: (originalFileName, fileName, fileSize, userName) => dispatch({ type: 'FILE_UPLOADED', originalFileName, fileName, fileSize, userName })
+    fileUploaded: (originalFileName, fileName, fileSize, userName) => dispatch({ type: 'FILE_UPLOADED', originalFileName, fileName, fileSize, userName }),
+    roomFull: () => dispatch({ type: 'ROOM_FULL' })
   }
 };
 

@@ -39,6 +39,16 @@ class JoinRoom extends React.Component {
     this.joinRoom();
   }
 
+  componentDidMount() {
+    if (this.props.roomFull) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Room is full'
+      });
+      this.props.roomFullReset();
+    }
+  }
+
   roomNameChange(event) {
     this.setState({
       roomName: event.target.value
@@ -142,13 +152,15 @@ const style = reactTheme => createStyles({
 const mapStateToProps = state => {
   return {
     roomName: state.roomName,
-    userName: state.userName
+    userName: state.userName,
+    roomFull: state.roomFull
   };
 };
 
 const mapDispatchToProps = dispatch => {
   return {
-    onRoomUserNameChange: (roomName, userName) => dispatch({ type: 'ROOM_USER_NAME_CHANGE', data: { roomName, userName } })
+    onRoomUserNameChange: (roomName, userName) => dispatch({ type: 'ROOM_USER_NAME_CHANGE', data: { roomName, userName } }),
+    roomFullReset: () => dispatch({ type: 'ROOM_FULL_UNSET' })
   }
 };
 
