@@ -4,7 +4,7 @@
 
 ### `npm install`
 
-## Start server
+## Start server with PM2
 
 ### `npm run start`
 

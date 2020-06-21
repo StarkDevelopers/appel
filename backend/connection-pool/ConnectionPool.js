@@ -38,7 +38,9 @@ class ConnectionPool {
     // Reject if 2 users already exist
     if (this.connections[roomName].users.length === 2) {
       roomFull = true;
-      console.log(roomFull ? `${roomName}: full` : `${roomName}: slot available`);
+      console.log(`${roomName}: full`);
+    } else {
+      console.log(`${roomName}: slot available`);
     }
     return { available: roomExist, full: roomFull };
   }
@@ -95,7 +97,7 @@ class ConnectionPool {
           console.log(`${userSocket.client.id} Left the Room ${roomName}`);
           this.connections[roomName].users = this.connections[roomName].users.filter(u => u.socketId !== userSocket.client.id);
           userSocket.broadcast.emit('disconnected');
-  
+
           if (this.connections[roomName].users.length === 0) {
             cleanUpUploads(roomName);
             this.connections[roomName].socket.removeAllListeners();
@@ -110,14 +112,14 @@ class ConnectionPool {
 }
 
 function cleanUpUploads(roomName) {
-  if (fs.existsSync(path.join('..', 'uploads', roomName))) {
-    const files = fs.readdirSync(path.join('..', 'uploads', roomName));
+  if (fs.existsSync(path.join('uploads', roomName))) {
+    const files = fs.readdirSync(path.join('uploads', roomName));
     files.forEach(f => {
-      if (fs.statSync(path.join('..', 'uploads', roomName, f)).isFile()) {
-        fs.unlinkSync(path.join('..', 'uploads', roomName, f));
+      if (fs.statSync(path.join('uploads', roomName, f)).isFile()) {
+        fs.unlinkSync(path.join('uploads', roomName, f));
       }
     });
-    fs.rmdirSync(path.join('..', 'uploads', roomName));
+    fs.rmdirSync(path.join('uploads', roomName));
   }
 }
 
