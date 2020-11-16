@@ -65,7 +65,7 @@ class ChatRoom extends React.Component {
 
     this.timerInterval = setInterval(() => {
       this.time += 1;
-      if (this.time === 60) {
+      if (this.time === 3600) {
         this.socket.disconnect();
         this.props.chatTimeout();
       }
