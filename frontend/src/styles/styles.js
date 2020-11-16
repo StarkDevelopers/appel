@@ -28,10 +28,10 @@ export const STYLES = {
     fontFamily: "\"Ubuntu\", sans-serif",
     color: '#333333',
     width: '100%',
-    padding: '0.30rem',
+    padding: '0.5rem',
     boxSizing: 'border-box',
     textAlign: 'center',
-    fontSize: '1.5rem',
+    fontSize: '1.25rem',
     backgroundColor: '#999999',
     cursor: 'pointer'
   }

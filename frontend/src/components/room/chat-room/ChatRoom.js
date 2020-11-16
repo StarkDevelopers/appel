@@ -36,6 +36,8 @@ class ChatRoom extends React.Component {
     this.dataChannel = null;
     this.isPeerJoined = false;
     this.roomFull = false;
+    this.time = 0;
+    this.timerInterval = null;
 
     this.addDataChannel = this.addDataChannel.bind(this);
     this.peerJoined = this.peerJoined.bind(this);
@@ -60,6 +62,15 @@ class ChatRoom extends React.Component {
       this.props.roomFull();
       return;
     }
+
+    this.timerInterval = setInterval(() => {
+      this.time += 1;
+      if (this.time === 60) {
+        this.socket.disconnect();
+        this.props.chatTimeout();
+      }
+    }, 1000);
+
     this.socket = io(`/${this.props.roomName}`);
     this.socket.on('roomFull', () => {
       this.roomFull = true;
@@ -75,10 +86,10 @@ class ChatRoom extends React.Component {
         }
 
         console.log('connected ', this.socket.id);
-  
+
         if (data.available) {
           this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
-  
+
           this.dataChannel = await RTCPeerReceiver(this.peerConnection, this.socket, this.props.roomName, this.props.userName, {
             receivedMessage: this.receivedMessage,
             addPeerUserName: this.props.addPeerUserName,
@@ -96,7 +107,7 @@ class ChatRoom extends React.Component {
           if (!isNegotiation) {
             this.peerConnection = new RTCPeerConnection(this.iceConfiguration);
           }
-  
+
           await RTCPeerSender(this.peerConnection, this.socket, { offer, user }, this.props.userName, {
             receivedMessage: this.receivedMessage,
             addPeerUserName: this.props.addPeerUserName,
@@ -247,7 +258,7 @@ class ChatRoom extends React.Component {
             handleSendMessage={this.handleSendMessage}
             calling={this.calling}
             onUploaded={this.handleFileUpload} /> }
-          
+
           {/* Video Room */}
           { this.props.inVideoCall && <VideoRoom
             handleSendMessage={this.handleSendMessage}
@@ -313,7 +324,8 @@ const mapDispatchToProps = dispatch => {
     joinVideoCall: (join = true) => dispatch({ type: 'JOIN_VIDEO_CALL', join }),
     disconnectedCall: message => dispatch({ type: 'DISCONNECT_CALL', message }),
     fileUploaded: (originalFileName, fileName, fileSize, userName) => dispatch({ type: 'FILE_UPLOADED', originalFileName, fileName, fileSize, userName }),
-    roomFull: () => dispatch({ type: 'ROOM_FULL' })
+    roomFull: () => dispatch({ type: 'ROOM_FULL' }),
+    chatTimeout: () => dispatch({ type: 'TIMEOUT' })
   }
 };
 

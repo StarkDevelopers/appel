@@ -47,6 +47,13 @@ class JoinRoom extends React.Component {
       });
       this.props.roomFullReset();
     }
+    if (this.props.chatTimeout) {
+      this.setState({
+        showAlert: true,
+        showAlertMessage: 'Time limit of 1 Hour exceeded'
+      });
+      this.props.chatTimeoutReset();
+    }
   }
 
   roomNameChange(event) {
@@ -77,7 +84,7 @@ class JoinRoom extends React.Component {
       });
       return;
     }
-    this.props.props.history.replace(`/${this.state.roomName}`);
+    this.props.props.history.replace(`/room/${this.state.roomName}`);
     this.props.onRoomUserNameChange(roomName, userName);
   }
 
@@ -117,6 +124,14 @@ class JoinRoom extends React.Component {
                 Join
               </Typography>
             </Grid>
+            {
+              !this.props.isAuthenticated &&
+              <Grid item xs={12} className={classes.room}>
+                <Typography className={classes.buttonField}>
+                  <a href="/api/sign-in" className={classes.signInLink}>Sign in with Google</a>
+                </Typography>
+              </Grid>
+            }
           </Grid>
         </Grid>
         <Snackbar
@@ -146,21 +161,28 @@ const style = reactTheme => createStyles({
   }, STYLES.inputField),
   buttonField: Object.assign({
     marginBottom: '0.25rem'
-  }, STYLES.buttonField)
+  }, STYLES.buttonField),
+  signInLink: {
+    textDecoration: 'none',
+    color: '#333333'
+  }
 });
 
 const mapStateToProps = state => {
   return {
     roomName: state.roomName,
     userName: state.userName,
-    roomFull: state.roomFull
+    roomFull: state.roomFull,
+    chatTimeout: state.chatTimeout,
+    isAuthenticated: state.isAuthenticated,
   };
 };
 
 const mapDispatchToProps = dispatch => {
   return {
     onRoomUserNameChange: (roomName, userName) => dispatch({ type: 'ROOM_USER_NAME_CHANGE', data: { roomName, userName } }),
-    roomFullReset: () => dispatch({ type: 'ROOM_FULL_UNSET' })
+    roomFullReset: () => dispatch({ type: 'ROOM_FULL_UNSET' }),
+    chatTimeoutReset: () => dispatch({ type: 'TIMEOUT_UNSET' })
   }
 };
 

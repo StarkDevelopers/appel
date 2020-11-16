@@ -19,7 +19,7 @@ class FileUploadPicker extends React.Component {
     this.allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc',
       'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'mp3', 'm4a', 'wav', 'mp4',
       'm4v', 'mpg', 'wmv', 'mov', 'avi', 'swf', 'xml', 'zip', 'csv', 'txt',
-      'tar', 'tar.gz', 'tgz', 'log', 'json'];
+      'tar', 'tar.gz', 'tgz', 'log', 'json', 'log'];
 
     this.onDrop = this.onDrop.bind(this);
     this.handleAlertClose = this.handleAlertClose.bind(this);

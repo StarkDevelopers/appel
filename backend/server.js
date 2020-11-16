@@ -12,6 +12,18 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 
+// Project Modules
+const initializeSession = require('./middlewares/session-management/session-initialize');
+const loginSequence = require('./middlewares/session-management/login-sequence');
+const initializeCSRFToken = require('./middlewares/csrf-management/csrf-token');
+const {
+  serveEJSTemplates,
+  frontendResources,
+  staticResourcesFromUtility
+} = require('./middlewares/static-resource-management/static-resource');
+const DBConnection = require('./connection-pool/dbConnection');
+const checkForAuthenticatedUser = require('./middlewares/session-management/authenticated-user');
+
 // Initializing express app
 const app = express();
 const http = HTTP.createServer(app);
@@ -26,6 +38,7 @@ if (CONTEXT === 'DEVELOPMENT') {
 // Enable Parsing Body of incoming request
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 app.use(bodyParser.json({ limit: '50mb' }));
+app.use(require('cookie-parser')());
 
 // Initialize Multer for parsing multi-part form data
 const fileUpload = require('./middlewares/multer/multer')();
@@ -35,23 +48,41 @@ app.fileUpload = fileUpload;
 const io = require('socket.io')(http);
 
 // Initialize Connection Pool
-const ConnectionPool = require('./connection-pool/ConnectionPool');
-ConnectionPool.io = io;
-
-// Project modules
-const {
-  serveEJSTemplates,
-  frontendResources,
-  staticResourcesFromUtility
-} = require('./middlewares/static-resource-management/static-resource');
+const SocketPool = require('./socket-pool/socket-pool');
+SocketPool.io = io;
 
 // API Routes
 const { initRoutes } = require('./routes/routes');
+const { authenticateRoutes } = require('./routes/authenticateRoutes');
+
+/**
+ * Initializes express-session with redis store/memory store based on CONTEXT
+ * Initialized passport and passport-session
+ * As well defines passport local-strategy for login
+ */
+initializeSession(app);
+
+/**
+ * Sets CSRF token in responses
+ * Checks CSRF token in incoming requests
+ */
+initializeCSRFToken(app);
+
+/**
+ * Logs in user with passport local-strategy
+ * Redirects to / or requested page
+ */
+loginSequence(app);
 
 /**
  * Initialize API Routes
  */
 initRoutes(app);
+
+/**
+ * Authenticate Routes
+ */
+authenticateRoutes(app);
 
 /**
  * Seriveg EJS templates from views/ directory
@@ -101,9 +132,20 @@ process.on('exit', (code) => {
   console.log(`Process is about to exit with code: ${code}`);
 });
 
-/**
- * Starting http server on specified port default 8080
- */
-http.listen(process.env.PORT, () => {
-  console.log(`listening on ${process.env.PORT}`);
-});
+(async () => {
+  try {
+    /**
+     * Initialize Database Connection
+     */
+    await DBConnection.getConnection();
+
+    /**
+     * Starting http server on specified port default 8080
+     */
+    http.listen(process.env.PORT, () => {
+      console.log(`listening on ${process.env.PORT}`);
+    });
+  } catch (exception) {
+    console.error(`Exception occurred while connecting to Database. Failed to start server.: ${exception.message}\n${exception.stack}`);
+  }
+})();

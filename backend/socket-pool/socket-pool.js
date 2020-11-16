@@ -12,7 +12,7 @@ const events = [
   { event: 'camStatus', fireEvent: 'camStatus' }
 ]
 
-class ConnectionPool {
+class SocketPool {
   constructor() {
     this.connections = {};
     this.io = null;
@@ -99,6 +99,7 @@ class ConnectionPool {
           userSocket.broadcast.emit('disconnected');
 
           if (this.connections[roomName].users.length === 0) {
+            console.log('Room is empty');
             cleanUpUploads(roomName);
             this.connections[roomName].socket.removeAllListeners();
             this.connections[roomName].socket = null;
@@ -123,4 +124,4 @@ function cleanUpUploads(roomName) {
   }
 }
 
-module.exports = new ConnectionPool();
+module.exports = new SocketPool();

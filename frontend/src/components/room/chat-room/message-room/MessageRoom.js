@@ -102,7 +102,7 @@ class MessageRoom extends React.Component {
                         </Typography>
                         <IconButton className={classes.fileDownload} aria-label="download-file">
                           <a
-                            href={`api/download-file/${this.props.roomName}/${message.fileName}/${message.originalFileName}`}
+                            href={`/api/download-file/${this.props.roomName}/${message.fileName}/${message.originalFileName}`}
                             // onClick={e => e.preventDefault()}
                             target="_blank"
                             rel="noopener noreferrer"

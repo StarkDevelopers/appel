@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ConnectionPool = require('../connection-pool/ConnectionPool');
+const SocketPool = require('../socket-pool/socket-pool');
 
 function initRoutes(app) {
   /**
@@ -12,7 +12,7 @@ function initRoutes(app) {
    */
   app.post('/api/join/:roomName', (req, res) => {
     try {
-      const response = ConnectionPool.join(req.params.roomName);
+      const response = SocketPool.join(req.params.roomName);
       return res.send(response);
     } catch (exception) {
       console.error(`Error while adding room: ${exception.message} \n Stack Trace: ${exception.stack}`);
@@ -51,7 +51,6 @@ function initRoutes(app) {
       if (!res.headersSent) {
         return res.status(500).send({ error: `Error while downloading file: ${exception.message}` });
       }
-      console.log('Response already sent');
       return;
     }
   });

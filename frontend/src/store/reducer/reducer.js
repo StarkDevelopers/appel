@@ -10,7 +10,9 @@ const initialState = {
   videoDeviceId: '',
   videoCamOff: false,
   micOff: false,
-  roomFull: false
+  roomFull: false,
+  isAuthenticated: false,
+  profile: null
 };
 
 export const reducer = (state = initialState, action) => {
@@ -148,6 +150,28 @@ export const reducer = (state = initialState, action) => {
       return {
         ...state,
         roomFull: false
+      }
+    }
+    case 'TIMEOUT': {
+      return {
+        ...state,
+        joinedRoom: false,
+        roomName: null,
+        userName: null,
+        chatTimeout: true
+      }
+    }
+    case 'TIMEOUT_UNSET': {
+      return {
+        ...state,
+        chatTimeout: false
+      }
+    }
+    case 'IS_AUTHENTICATED': {
+      return {
+        ...state,
+        isAuthenticated: action.isAuthenticated,
+        profile: action.profile
       }
     }
     default:
